@@ -4,154 +4,120 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tuition Hub | Management</title>
+    
+    <!-- Firebase Compat SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
+
     <style>
-        :root { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --accent: #bb86fc; }
-        .light-mode { --bg: #f5f5f5; --card: #ffffff; --text: #121212; --accent: #6200ee; }
-        body { background-color: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 80px; transition: 0.3s; }
-        .container { padding: 20px; max-width: 900px; margin: auto; }
-        .card { background: var(--card); border: 1px solid #333; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
-        .navbar, .bottom-nav { background: var(--card); border-color: var(--accent); display: flex; justify-content: space-around; }
-        .navbar { padding: 15px; border-bottom: 2px solid var(--accent); position: sticky; top: 0; z-index: 100; }
-        .bottom-nav { padding: 12px; border-top: 2px solid var(--accent); position: fixed; bottom: 0; width: 100%; }
-        .nav-item, .bottom-item { color: var(--accent); font-weight: bold; cursor: pointer; text-align: center; }
-        .active { color: white !important; background: #332940; border-radius: 5px; padding: 5px 10px; }
-        .settings-btn { width: 100%; background: var(--card); color: var(--text); padding: 15px; margin: 8px 0; border-radius: 10px; text-align: left; border: 1px solid #444; cursor: pointer; font-weight: bold; }
-        .logout-row { border: 1px solid #cf6679; color: #cf6679 !important; }
-        .student-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #333; }
-        .del-btn { background: #cf6679; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
-        .hidden { display: none; }
-        .profile-img { width: 90px; height: 90px; border-radius: 50%; border: 3px solid var(--accent); object-fit: cover; }
-        .auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+        :root { --accent: #bb86fc; --card: #1e1e1e; --bg: #121212; }
+        body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; padding-bottom: 70px; }
+        
+        /* THE FIX: This class hides the login box once you're in */
+        .hidden { display: none !important; }
+
+        .auth-screen { display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .card { background: var(--card); padding: 30px; border-radius: 15px; border: 1px solid var(--accent); text-align: center; }
+        
+        /* Your Dashboard Design Styles */
+        .nav-item { color: var(--accent); font-weight: bold; padding: 10px; cursor: pointer; }
+        .student-item { display: flex; justify-content: space-between; background: var(--card); margin: 10px; padding: 15px; border-radius: 8px; }
+        .del-btn { background: #cf6679; color: white; border: none; padding: 5px 10px; border-radius: 4px; }
+        
+        /* Bottom Nav from your image_8ec3ff.png */
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: var(--card); display: flex; justify-content: space-around; border-top: 2px solid var(--accent); }
     </style>
 </head>
 <body>
 
-    <!-- LOGIN SCREEN -->
+    <!-- 1. THE LOGIN BOX (The one that was "stuck") -->
     <div id="view-auth" class="auth-screen">
-        <div class="card" style="text-align: center;">
+        <div class="card">
             <h1>Tuition Hub</h1>
             <p>Please sign in to continue</p>
-            <button onclick="handleLogin()" style="background: white; color: black; padding: 15px 30px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer;">Sign in with Google</button>
+            <button onclick="handleLogin()" style="background: white; color: black; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer;">
+                Sign in with Google
+            </button>
         </div>
     </div>
 
-    <!-- MAIN DASHBOARD -->
+    <!-- 2. THE ACTUAL CONTENT (Hidden until login) -->
     <div id="main-ui" class="hidden">
-        <!-- HOME VIEW -->
-        <div id="view-home">
-            <div class="navbar">
-                <div class="nav-item active" onclick="switchTab('students')">Students</div>
-                <div class="nav-item" onclick="switchTab('attendance')">Attendance</div>
-                <div class="nav-item" onclick="switchTab('fees')">Fees Status</div>
-            </div>
-            <div class="container">
-                <div class="card">
-                    <h3>Register New Student</h3>
-                    <input type="text" id="nameIn" placeholder="Name" style="padding:10px; border-radius:5px; background: #2c2c2c; color: white; border: 1px solid #444;">
-                    <input type="number" id="classIn" placeholder="Class (1-12)" min="1" max="12" style="padding:10px; border-radius:5px; background: #2c2c2c; color: white; border: 1px solid #444;">
-                    <button onclick="addStudent()" style="background:var(--accent); padding:10px; border-radius:5px; border:none; font-weight:bold; cursor: pointer;">Register</button>
-                </div>
-                <div class="card">
-                    <h3>Student List</h3>
-                    <div id="mainStudentList"></div>
+        <div style="padding: 20px;">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+                <img id="userImg" style="width: 50px; border-radius: 50%; border: 2px solid var(--accent);">
+                <div>
+                    <h2 id="userName" style="margin: 0;"></h2>
+                    <p id="userEmail" style="margin: 0; opacity: 0.7; font-size: 12px;"></p>
                 </div>
             </div>
+
+            <h3>Student List</h3>
+            <div id="mainStudentList"></div>
+            
+            <button onclick="handleLogout()" style="margin-top: 20px; color: #cf6679; background: none; border: 1px solid #cf6679; padding: 8px; cursor: pointer;">Logout</button>
         </div>
 
-        <!-- PROFILE VIEW -->
-        <div id="view-profile" class="hidden">
-            <div class="container">
-                <div class="card" style="text-align: center;">
-                    <img src="https://via.placeholder.com/90" id="userImg" class="profile-img">
-                    <h2 id="userName">User Name</h2>
-                    <p id="userEmail">email@example.com</p>
-                    <button onclick="document.getElementById('fileInput').click()" style="background:var(--accent); padding:8px; border:none; border-radius:5px; cursor: pointer;">Change Photo</button>
-                    <input type="file" id="fileInput" class="hidden" onchange="updatePhoto(event)">
-                </div>
-                <div class="card">
-                    <h3>Settings</h3>
-                    <button class="settings-btn" onclick="toggleDarkMode()">🌓 Toggle Dark/Light Mode</button>
-                    <div id="remove-section">
-                        <h4>Select Students to Remove:</h4>
-                        <div id="removalList">Loading students...</div>
-                    </div>
-                    <button class="settings-btn logout-row" onclick="handleLogout()">🚪 Logout Account</button>
-                </div>
-            </div>
-        </div>
-
+        <!-- Your Bottom Navigation -->
         <div class="bottom-nav">
-            <div class="bottom-item active" id="btn-home" onclick="switchView('home')">🏠<br>Home</div>
-            <div class="bottom-item" id="btn-profile" onclick="switchView('profile')">👤<br>Profile</div>
+            <div class="nav-item">Home</div>
+            <div class="nav-item">Students</div>
+            <div class="nav-item">Fees</div>
+            <div class="nav-item">Settings</div>
         </div>
     </div>
 
     <script>
-        const firebaseConfig = { /* PASTE YOUR KEYS HERE */ };
+        const firebaseConfig = {
+            apiKey: "AIzaSyDH9vfqKh16tka_14deuwWzYDQR-2TvR_U",
+            authDomain: "tuituionhub.firebaseapp.com",
+            projectId: "tuituionhub",
+            storageBucket: "tuituionhub.firebasestorage.app",
+            messagingSenderId: "373410141090",
+            appId: "1:373410141090:web:45144c02501738c31798fb",
+            measurementId: "G-XPS2L1NZ2V"
+        };
+
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        function switchView(v) {
-            document.getElementById('view-home').classList.toggle('hidden', v !== 'home');
-            document.getElementById('view-profile').classList.toggle('hidden', v !== 'profile');
-            document.getElementById('btn-home').classList.toggle('active', v === 'home');
-            document.getElementById('btn-profile').classList.toggle('active', v === 'profile');
-        }
-
-        function toggleDarkMode() { document.body.classList.toggle('light-mode'); }
-
+        // AUTH LISTENER: This is what swaps the "box" for the "stuff"
         auth.onAuthStateChanged(user => {
+            const authView = document.getElementById('view-auth');
+            const mainView = document.getElementById('main-ui');
+
             if (user) {
-                document.getElementById('view-auth').classList.add('hidden');
-                document.getElementById('main-ui').classList.remove('hidden');
+                authView.classList.add('hidden'); // Hide the login box
+                mainView.classList.remove('hidden'); // Show your dashboard
                 document.getElementById('userName').innerText = user.displayName;
                 document.getElementById('userEmail').innerText = user.email;
-                if(user.photoURL) document.getElementById('userImg').src = user.photoURL;
-                loadData();
+                document.getElementById('userImg').src = user.photoURL || '';
+                loadData(); 
             } else {
-                document.getElementById('view-auth').classList.remove('hidden');
-                document.getElementById('main-ui').classList.add('hidden');
+                authView.classList.remove('hidden');
+                mainView.classList.add('hidden');
             }
         });
 
         function handleLogin() {
             const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider);
+            auth.signInWithPopup(provider).catch(err => alert(err.message));
         }
 
-        async function handleLogout() {
-            await auth.signOut();
+        function handleLogout() {
+            auth.signOut().then(() => window.location.href = "index.html");
         }
 
         async function loadData() {
             const snapshot = await db.collection('students').get();
-            const mainList = document.getElementById('mainStudentList');
-            const removalList = document.getElementById('removalList');
-            mainList.innerHTML = ""; removalList.innerHTML = "";
+            const list = document.getElementById('mainStudentList');
+            list.innerHTML = "";
             snapshot.forEach(doc => {
-                const data = doc.data();
-                mainList.innerHTML += `<div class="student-item"><span>${data.name}</span><span>Class ${data.class}</span></div>`;
-                removalList.innerHTML += `<div class="student-item"><span>${data.name}</span><button class="del-btn" onclick="deleteStudent('${doc.id}')">Remove</button></div>`;
+                const s = doc.data();
+                list.innerHTML += `<div class="student-item"><span>${s.name}</span> <button class="del-btn">Delete</button></div>`;
             });
-        }
-
-        async function addStudent() {
-            const name = document.getElementById('nameIn').value;
-            const cls = document.getElementById('classIn').value;
-            if(!name || !cls) return alert("Fill all fields");
-            await db.collection('students').add({ name, class: cls });
-            loadData();
-        }
-
-        async function deleteStudent(id) {
-            if(confirm("Are you sure?")) {
-                await db.collection('students').doc(id).delete();
-                loadData();
-            }
         }
     </script>
 </body>
