@@ -3,100 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuition Hub | Dashboard</title>
+    <title>Tuition Hub | Management</title>
     <style>
         body { background-color: #121212; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; margin: 0; }
-        .header { background: #1f1b24; padding: 20px; text-align: center; border-bottom: 2px solid #bb86fc; }
-        .container { max-width: 900px; margin: 30px auto; padding: 20px; }
-        .card { background: #1e1e1e; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); margin-bottom: 25px; }
         
-        /* Input Styling */
-        input { background: #2c2c2c; border: 1px solid #444; color: white; padding: 12px; border-radius: 6px; width: 180px; margin-right: 10px; margin-bottom: 10px; }
-        input[type="date"] { color-scheme: dark; } /* Ensures the calendar icon is visible in dark mode */
+        /* Navigation Bar */
+        .navbar { background: #1f1b24; display: flex; justify-content: space-around; padding: 15px; border-bottom: 2px solid #bb86fc; position: sticky; top: 0; }
+        .nav-item { color: #bb86fc; text-decoration: none; font-weight: bold; cursor: pointer; padding: 5px 10px; border-radius: 5px; }
+        .nav-item:hover, .nav-item.active { background: #332940; color: white; }
+
+        .container { max-width: 900px; margin: 20px auto; padding: 20px; }
+        .section { display: none; } /* Hidden by default */
+        .section.active { display: block; } /* Show only active section */
+
+        .card { background: #1e1e1e; padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #333; }
+        input, select { background: #2c2c2c; border: 1px solid #444; color: white; padding: 12px; border-radius: 6px; margin: 5px; width: 180px; }
+        button { background: #bb86fc; color: #000; border: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         
-        button { background: #bb86fc; color: #000; border: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:hover { background: #a370f7; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
+        th { color: #bb86fc; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th { background: #2c2c2c; color: #bb86fc; padding: 15px; text-align: left; }
-        td { padding: 15px; border-bottom: 1px solid #333; }
+        .status-paid { color: #03dac6; font-weight: bold; }
+        .status-unpaid { color: #cf6679; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1>Tuition Hub</h1>
+    <div class="navbar">
+        <div class="nav-item active" onclick="showSection('home')">Home</div>
+        <div class="nav-item" onclick="showSection('attendance')">Attendance</div>
+        <div class="nav-item" onclick="showSection('fees')">Fees Status</div>
     </div>
 
     <div class="container">
-        <!-- New Registration Form with Admission Date -->
-        <div class="card">
-            <h3>Register New Student</h3>
-            <input type="text" id="studentName" placeholder="Enter Name">
-            <input type="text" id="studentClass" placeholder="Enter Class">
-            <input type="date" id="admissionDate">
-            <button onclick="saveStudent()">Add to Database</button>
+        
+        <!-- HOME SECTION -->
+        <div id="home" class="section active">
+            <div class="card">
+                <h3>Register New Student</h3>
+                <input type="text" id="name" placeholder="Name">
+                <input type="text" id="class" placeholder="Class">
+                <input type="date" id="date">
+                <button onclick="addStudent()">Register</button>
+            </div>
+            <div class="card">
+                <h3>Student List</h3>
+                <table id="studentTable">
+                    <thead><tr><th>Name</th><th>Class</th><th>Adm. Date</th></tr></thead>
+                    <tbody id="homeList"></tbody>
+                </table>
+            </div>
         </div>
 
-        <!-- Updated Table with Admission Date Column -->
-        <div class="card">
-            <h3>Active Students</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Class</th>
-                        <th>Date of Admission</th>
-                    </tr>
-                </thead>
-                <tbody id="listContainer"></tbody>
-            </table>
+        <!-- ATTENDANCE SECTION -->
+        <div id="attendance" class="section">
+            <div class="card">
+                <h3>Daily Attendance</h3>
+                <table>
+                    <thead><tr><th>Name</th><th>Class</th><th>Status</th></tr></thead>
+                    <tbody id="attendanceList"></tbody>
+                </table>
+            </div>
         </div>
+
+        <!-- FEES SECTION -->
+        <div id="fees" class="section">
+            <div class="card">
+                <h3>Fees Management</h3>
+                <table>
+                    <thead><tr><th>Name</th><th>Monthly Fee</th><th>Status</th></tr></thead>
+                    <tbody id="feesList"></tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 
     <script>
-        // Load students and display their Admission Date
-        async function loadStudents() {
-            try {
-                const response = await fetch('/api/students');
-                const students = await response.json();
-                const container = document.getElementById('listContainer');
-                container.innerHTML = students.map(s => `
-                    <tr>
-                        <td>${s.name}</td>
-                        <td>${s.class}</td>
-                        <td>${s.admissionDate || 'Not Provided'}</td>
-                    </tr>
-                `).join('');
-            } catch (err) { console.error("Error loading students:", err); }
+        // Section Switching Logic
+        function showSection(id) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            event.target.classList.add('active');
         }
 
-        // Save student including the new date field
-        async function saveStudent() {
-            const name = document.getElementById('studentName').value;
-            const className = document.getElementById('studentClass').value;
-            const date = document.getElementById('admissionDate').value;
+        async function loadData() {
+            const res = await fetch('/api/students');
+            const students = await res.json();
             
-            if(!name || !className || !date) return alert("Please fill Name, Class, and Admission Date");
+            // Home List
+            document.getElementById('homeList').innerHTML = students.map(s => `
+                <tr><td>${s.name}</td><td>${s.class}</td><td>${s.admissionDate || 'N/A'}</td></tr>
+            `).join('');
+
+            // Attendance List
+            document.getElementById('attendanceList').innerHTML = students.map(s => `
+                <tr>
+                    <td>${s.name}</td>
+                    <td>${s.class}</td>
+                    <td><button style="padding:5px 10px; font-size:12px;">Mark Present</button></td>
+                </tr>
+            `).join('');
+
+            // Fees List
+            document.getElementById('feesList').innerHTML = students.map(s => `
+                <tr>
+                    <td>${s.name}</td>
+                    <td>₹1000</td>
+                    <td class="status-unpaid">Pending</td>
+                </tr>
+            `).join('');
+        }
+
+        async function addStudent() {
+            const name = document.getElementById('name').value;
+            const cls = document.getElementById('class').value;
+            const dt = document.getElementById('date').value;
+            if(!name || !cls || !dt) return alert("Fill everything!");
 
             await fetch('/api/students', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    name: name, 
-                    class: className, 
-                    admissionDate: date 
-                })
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ name, class: cls, admissionDate: dt })
             });
-
-            // Clear inputs and refresh table
-            document.getElementById('studentName').value = '';
-            document.getElementById('studentClass').value = '';
-            document.getElementById('admissionDate').value = '';
-            loadStudents(); 
+            loadData();
         }
 
-        loadStudents();
+        loadData();
     </script>
 </body>
 </html>
