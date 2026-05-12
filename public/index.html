@@ -5,18 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tuition Hub | Dashboard</title>
     <style>
-        /* Your dark theme and styles */
         body { background-color: #121212; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; margin: 0; }
         .header { background: #1f1b24; padding: 20px; text-align: center; border-bottom: 2px solid #bb86fc; }
         .container { max-width: 900px; margin: 30px auto; padding: 20px; }
         .card { background: #1e1e1e; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); margin-bottom: 25px; }
-        input { background: #2c2c2c; border: 1px solid #444; color: white; padding: 12px; border-radius: 6px; width: 200px; margin-right: 10px; }
+        
+        /* Input Styling */
+        input { background: #2c2c2c; border: 1px solid #444; color: white; padding: 12px; border-radius: 6px; width: 180px; margin-right: 10px; margin-bottom: 10px; }
+        input[type="date"] { color-scheme: dark; } /* Ensures the calendar icon is visible in dark mode */
+        
         button { background: #bb86fc; color: #000; border: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; }
         button:hover { background: #a370f7; }
+        
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th { background: #2c2c2c; color: #bb86fc; padding: 15px; text-align: left; }
         td { padding: 15px; border-bottom: 1px solid #333; }
-        .status-btn { background: #03dac6; padding: 8px 15px; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -26,15 +29,16 @@
     </div>
 
     <div class="container">
-        <!-- Student Entry Form -->
+        <!-- New Registration Form with Admission Date -->
         <div class="card">
             <h3>Register New Student</h3>
             <input type="text" id="studentName" placeholder="Enter Name">
             <input type="text" id="studentClass" placeholder="Enter Class">
+            <input type="date" id="admissionDate">
             <button onclick="saveStudent()">Add to Database</button>
         </div>
 
-        <!-- Student List Table -->
+        <!-- Updated Table with Admission Date Column -->
         <div class="card">
             <h3>Active Students</h3>
             <table>
@@ -42,18 +46,16 @@
                     <tr>
                         <th>Name</th>
                         <th>Class</th>
-                        <th>Actions</th>
+                        <th>Date of Admission</th>
                     </tr>
                 </thead>
-                <tbody id="listContainer">
-                    <!-- Students will appear here -->
-                </tbody>
+                <tbody id="listContainer"></tbody>
             </table>
         </div>
     </div>
 
     <script>
-        // Logic to talk to your server.js
+        // Load students and display their Admission Date
         async function loadStudents() {
             try {
                 const response = await fetch('/api/students');
@@ -63,30 +65,37 @@
                     <tr>
                         <td>${s.name}</td>
                         <td>${s.class}</td>
-                        <td><button class="status-btn">Mark Attendance</button></td>
+                        <td>${s.admissionDate || 'Not Provided'}</td>
                     </tr>
                 `).join('');
             } catch (err) { console.error("Error loading students:", err); }
         }
 
+        // Save student including the new date field
         async function saveStudent() {
             const name = document.getElementById('studentName').value;
             const className = document.getElementById('studentClass').value;
+            const date = document.getElementById('admissionDate').value;
             
-            if(!name || !className) return alert("Please fill both fields");
+            if(!name || !className || !date) return alert("Please fill Name, Class, and Admission Date");
 
             await fetch('/api/students', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, class: className })
+                body: JSON.stringify({ 
+                    name: name, 
+                    class: className, 
+                    admissionDate: date 
+                })
             });
 
+            // Clear inputs and refresh table
             document.getElementById('studentName').value = '';
             document.getElementById('studentClass').value = '';
-            loadStudents(); // Refresh list
+            document.getElementById('admissionDate').value = '';
+            loadStudents(); 
         }
 
-        // Run on page load
         loadStudents();
     </script>
 </body>
