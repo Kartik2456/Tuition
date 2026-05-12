@@ -14,6 +14,7 @@
         .section.active { display: block; } 
         .card { background: #1e1e1e; padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #333; }
         
+        /* Sidebar Layout for Attendance */
         .attendance-layout { display: flex; gap: 20px; align-items: flex-start; }
         .table-wrapper { flex: 3; }
         .submit-wrapper { flex: 1; position: sticky; top: 80px; }
@@ -22,14 +23,13 @@
         .sub-btn { background: #333; color: #bb86fc; border: 1px solid #bb86fc; padding: 8px 20px; border-radius: 20px; cursor: pointer; width: 50%; text-align: center; }
         .sub-btn.active { background: #bb86fc; color: black; }
         
-        input[type="text"], input[type="number"], input[type="date"] { background: #2c2c2c; border: 1px solid #444; color: white; padding: 12px; border-radius: 6px; margin: 5px; }
+        input { background: #2c2c2c; border: 1px solid #444; color: white; padding: 12px; border-radius: 6px; margin: 5px; }
+        input[type="date"] { color-scheme: dark; }
         
-        /* BIGGER DOTS */
+        /* BIGGER RADIO DOTS */
         input[type="radio"] { transform: scale(1.8); cursor: pointer; accent-color: #bb86fc; }
         
         button { background: #bb86fc; color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        
-        /* UPDATED SUBMIT BUTTON */
         .btn-submit { background: #03dac6; padding: 25px; font-size: 20px; width: 100%; border-radius: 12px; }
 
         table { width: 100%; border-collapse: collapse; }
@@ -41,14 +41,15 @@
 <body>
 
     <div class="navbar">
-        <div class="nav-item active" id="nav-home" onclick="showSection('home')">Home</div>
+        <div class="nav-item active" id="nav-students" onclick="showSection('students')">Students</div>
         <div class="nav-item" id="nav-attendance" onclick="showSection('attendance')">Attendance</div>
         <div class="nav-item" id="nav-fees" onclick="showSection('fees')">Fees Status</div>
     </div>
 
     <div class="container">
         
-        <div id="home" class="section active">
+        <!-- STUDENTS SECTION -->
+        <div id="students" class="section active">
             <div class="card">
                 <h3>Register New Student</h3>
                 <input type="text" id="name" placeholder="Name">
@@ -58,10 +59,16 @@
             </div>
             <div class="card">
                 <h3>Student List</h3>
-                <table><thead><tr><th>Name</th><th>Class</th></tr></thead><tbody id="homeList"></tbody></table>
+                <table>
+                    <thead>
+                        <tr><th>Name</th><th>Class</th><th>Date of Admission</th></tr>
+                    </thead>
+                    <tbody id="homeList"></tbody>
+                </table>
             </div>
         </div>
 
+        <!-- ATTENDANCE SECTION -->
         <div id="attendance" class="section">
             <div class="sub-nav">
                 <div class="sub-btn active" id="btn-today" onclick="showSubSection('today')">Today</div>
@@ -124,7 +131,10 @@
         async function loadData() {
             const res = await fetch('/api/students');
             students = await res.json();
-            document.getElementById('homeList').innerHTML = students.map(s => `<tr><td>${s.name}</td><td>${s.class}</td></tr>`).join('');
+            document.getElementById('homeList').innerHTML = students.map(s => `
+                <tr><td>${s.name}</td><td>${s.class}</td><td>${s.admissionDate || 'N/A'}</td></tr>
+            `).join('');
+
             document.getElementById('attendanceTodayList').innerHTML = students.map(s => `
                 <tr>
                     <td>${s.name}</td>
@@ -137,11 +147,11 @@
         function updateTempStatus(name, status) { attendanceData[name] = status; }
 
         async function submitAttendance() {
-            const today = new Date().toLocaleDateString();
+            const today = new Date().toLocaleDateString('en-GB');
             const history = JSON.parse(localStorage.getItem('attHistory') || '[]');
             history.push({ date: today, records: attendanceData });
             localStorage.setItem('attHistory', JSON.stringify(history));
-            alert("Attendance submitted!");
+            alert("Attendance submitted for " + today);
             attendanceData = {};
             showSubSection('history');
         }
