@@ -1,158 +1,40 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuition Hub | Management</title>
-    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
-    <style>
-        :root { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --accent: #bb86fc; }
-        .light-mode { --bg: #f5f5f5; --card: #ffffff; --text: #121212; --accent: #6200ee; }
-        body { background-color: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 80px; transition: 0.3s; }
-        .container { padding: 20px; max-width: 900px; margin: auto; }
-        .card { background: var(--card); border: 1px solid #333; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
-        .navbar, .bottom-nav { background: var(--card); border-color: var(--accent); display: flex; justify-content: space-around; }
-        .navbar { padding: 15px; border-bottom: 2px solid var(--accent); position: sticky; top: 0; z-index: 100; }
-        .bottom-nav { padding: 12px; border-top: 2px solid var(--accent); position: fixed; bottom: 0; width: 100%; }
-        .nav-item, .bottom-item { color: var(--accent); font-weight: bold; cursor: pointer; text-align: center; }
-        .active { color: white !important; background: #332940; border-radius: 5px; padding: 5px 10px; }
-        .settings-btn { width: 100%; background: var(--card); color: var(--text); padding: 15px; margin: 8px 0; border-radius: 10px; text-align: left; border: 1px solid #444; cursor: pointer; font-weight: bold; }
-        .logout-row { border: 1px solid #cf6679; color: #cf6679 !important; }
-        .student-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #333; }
-        .del-btn { background: #cf6679; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
-        .hidden { display: none; }
-        .profile-img { width: 90px; height: 90px; border-radius: 50%; border: 3px solid var(--accent); object-fit: cover; }
-        .auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
-    </style>
-</head>
-<body>
+<script type="module">
+  // These imports come directly from your SDK image
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-    <!-- LOGIN SCREEN -->
-    <div id="view-auth" class="auth-screen">
-        <div class="card" style="text-align: center;">
-            <h1>Tuition Hub</h1>
-            <p>Please sign in to continue</p>
-            <button onclick="handleLogin()" style="background: white; color: black; padding: 15px 30px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer;">Sign in with Google</button>
-        </div>
-    </div>
+  // Data copied exactly from image_9109f7.png
+  const firebaseConfig = {
+    apiKey: "AIzaSyDH9vfqKh16tka_14deuwWzYDQR-2TvR_U",
+    authDomain: "tuituionhub.firebaseapp.com",
+    projectId: "tuituionhub",
+    storageBucket: "tuituionhub.firebasestorage.app",
+    messagingSenderId: "373410141090",
+    appId: "1:373410141090:web:45144c02501738c31798fb",
+    measurementId: "G-XPS2L1NZ2V"
+  };
 
-    <!-- MAIN DASHBOARD -->
-    <div id="main-ui" class="hidden">
-        <!-- HOME VIEW -->
-        <div id="view-home">
-            <div class="navbar">
-                <div class="nav-item active" onclick="switchTab('students')">Students</div>
-                <div class="nav-item" onclick="switchTab('attendance')">Attendance</div>
-                <div class="nav-item" onclick="switchTab('fees')">Fees Status</div>
-            </div>
-            <div class="container">
-                <div class="card">
-                    <h3>Register New Student</h3>
-                    <input type="text" id="nameIn" placeholder="Name" style="padding:10px; border-radius:5px; background: #2c2c2c; color: white; border: 1px solid #444;">
-                    <input type="number" id="classIn" placeholder="Class (1-12)" min="1" max="12" style="padding:10px; border-radius:5px; background: #2c2c2c; color: white; border: 1px solid #444;">
-                    <button onclick="addStudent()" style="background:var(--accent); padding:10px; border-radius:5px; border:none; font-weight:bold; cursor: pointer;">Register</button>
-                </div>
-                <div class="card">
-                    <h3>Student List</h3>
-                    <div id="mainStudentList"></div>
-                </div>
-            </div>
-        </div>
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
 
-        <!-- PROFILE VIEW -->
-        <div id="view-profile" class="hidden">
-            <div class="container">
-                <div class="card" style="text-align: center;">
-                    <img src="https://via.placeholder.com/90" id="userImg" class="profile-img">
-                    <h2 id="userName">User Name</h2>
-                    <p id="userEmail">email@example.com</p>
-                    <button onclick="document.getElementById('fileInput').click()" style="background:var(--accent); padding:8px; border:none; border-radius:5px; cursor: pointer;">Change Photo</button>
-                    <input type="file" id="fileInput" class="hidden" onchange="updatePhoto(event)">
-                </div>
-                <div class="card">
-                    <h3>Settings</h3>
-                    <button class="settings-btn" onclick="toggleDarkMode()">🌓 Toggle Dark/Light Mode</button>
-                    <div id="remove-section">
-                        <h4>Select Students to Remove:</h4>
-                        <div id="removalList">Loading students...</div>
-                    </div>
-                    <button class="settings-btn logout-row" onclick="handleLogout()">🚪 Logout Account</button>
-                </div>
-            </div>
-        </div>
+  // The Login Button Logic
+  document.getElementById('login-btn').onclick = () => {
+    signInWithPopup(auth, provider)
+      .then((result) => {
+        // Once logged in, go to your dashboard file
+        window.location.href = "dashboard.html";
+      })
+      .catch((error) => {
+        alert("Login failed: " + error.message);
+      });
+  };
 
-        <div class="bottom-nav">
-            <div class="bottom-item active" id="btn-home" onclick="switchView('home')">🏠<br>Home</div>
-            <div class="bottom-item" id="btn-profile" onclick="switchView('profile')">👤<br>Profile</div>
-        </div>
-    </div>
-
-    <script>
-        const firebaseConfig = { /* PASTE YOUR KEYS HERE */ };
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-
-        function switchView(v) {
-            document.getElementById('view-home').classList.toggle('hidden', v !== 'home');
-            document.getElementById('view-profile').classList.toggle('hidden', v !== 'profile');
-            document.getElementById('btn-home').classList.toggle('active', v === 'home');
-            document.getElementById('btn-profile').classList.toggle('active', v === 'profile');
-        }
-
-        function toggleDarkMode() { document.body.classList.toggle('light-mode'); }
-
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                document.getElementById('view-auth').classList.add('hidden');
-                document.getElementById('main-ui').classList.remove('hidden');
-                document.getElementById('userName').innerText = user.displayName;
-                document.getElementById('userEmail').innerText = user.email;
-                if(user.photoURL) document.getElementById('userImg').src = user.photoURL;
-                loadData();
-            } else {
-                document.getElementById('view-auth').classList.remove('hidden');
-                document.getElementById('main-ui').classList.add('hidden');
-            }
-        });
-
-        function handleLogin() {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider);
-        }
-
-        async function handleLogout() {
-            await auth.signOut();
-        }
-
-        async function loadData() {
-            const snapshot = await db.collection('students').get();
-            const mainList = document.getElementById('mainStudentList');
-            const removalList = document.getElementById('removalList');
-            mainList.innerHTML = ""; removalList.innerHTML = "";
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                mainList.innerHTML += `<div class="student-item"><span>${data.name}</span><span>Class ${data.class}</span></div>`;
-                removalList.innerHTML += `<div class="student-item"><span>${data.name}</span><button class="del-btn" onclick="deleteStudent('${doc.id}')">Remove</button></div>`;
-            });
-        }
-
-        async function addStudent() {
-            const name = document.getElementById('nameIn').value;
-            const cls = document.getElementById('classIn').value;
-            if(!name || !cls) return alert("Fill all fields");
-            await db.collection('students').add({ name, class: cls });
-            loadData();
-        }
-
-        async function deleteStudent(id) {
-            if(confirm("Are you sure?")) {
-                await db.collection('students').doc(id).delete();
-                loadData();
-            }
-        }
-    </script>
-</body>
-</html>
+  // Check if already logged in
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      window.location.href = "dashboard.html";
+    }
+  });
+</script>
