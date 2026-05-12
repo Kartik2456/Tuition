@@ -14,14 +14,15 @@
         .section.active { display: block; } 
         .card { background: #1e1e1e; padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #333; }
         .sub-nav { margin-bottom: 20px; display: flex; gap: 10px; }
-        .sub-btn { background: #333; color: #bb86fc; border: 1px solid #bb86fc; padding: 5px 15px; border-radius: 20px; cursor: pointer; }
+        .sub-btn { background: #333; color: #bb86fc; border: 1px solid #bb86fc; padding: 8px 20px; border-radius: 20px; cursor: pointer; }
         .sub-btn.active { background: #bb86fc; color: black; }
-        input { background: #2c2c2c; border: 1px solid #444; color: white; padding: 12px; border-radius: 6px; margin: 5px; width: 180px; }
-        input[type="date"] { color-scheme: dark; }
+        input { background: #2c2c2c; border: 1px solid #444; color: white; padding: 12px; border-radius: 6px; margin: 5px; }
         button { background: #bb86fc; color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
         th { color: #bb86fc; }
+        .radio-group { display: flex; gap: 15px; }
+        .history-date { color: #bb86fc; cursor: pointer; text-decoration: underline; display: block; margin: 10px 0; font-size: 18px; }
     </style>
 </head>
 <body>
@@ -34,7 +35,7 @@
 
     <div class="container">
         
-        <!-- HOME SECTION -->
+        <!-- HOME -->
         <div id="home" class="section active">
             <div class="card">
                 <h3>Register New Student</h3>
@@ -45,14 +46,11 @@
             </div>
             <div class="card">
                 <h3>Student List</h3>
-                <table>
-                    <thead><tr><th>Name</th><th>Class</th><th>Adm. Date</th></tr></thead>
-                    <tbody id="homeList"></tbody>
-                </table>
+                <table><thead><tr><th>Name</th><th>Class</th></tr></thead><tbody id="homeList"></tbody></table>
             </div>
         </div>
 
-        <!-- ATTENDANCE SECTION -->
+        <!-- ATTENDANCE -->
         <div id="attendance" class="section">
             <div class="sub-nav">
                 <button class="sub-btn active" id="btn-today" onclick="showSubSection('today')">Today</button>
@@ -61,33 +59,40 @@
 
             <div id="today" class="sub-section">
                 <div class="card">
-                    <h3>Mark Today's Attendance</h3>
+                    <h3>Today's Attendance</h3>
                     <table>
-                        <thead><tr><th>Name</th><th>Class</th><th>Action</th></tr></thead>
+                        <thead><tr><th>Name</th><th>Present</th><th>Absent</th></tr></thead>
                         <tbody id="attendanceTodayList"></tbody>
                     </table>
+                    <br>
+                    <button onclick="submitAttendance()" style="background:#03dac6; width:100%;">Final Submit to History</button>
                 </div>
             </div>
 
             <div id="history" class="sub-section" style="display:none;">
                 <div class="card">
                     <h3>Attendance History</h3>
-                    <input type="date" id="historyFilter" onchange="loadHistory()">
-                    <table>
-                        <thead><tr><th>Name</th><th>Class</th><th>Date</th></tr></thead>
-                        <tbody id="historyList"></tbody>
-                    </table>
+                    <div id="historyDates">No History Yet</div>
+                    <div id="historyDetail" style="display:none;">
+                        <button onclick="backToDates()" style="background:#444; color:white; margin-bottom:10px;">← Back to Dates</button>
+                        <h4 id="viewingDate"></h4>
+                        <table id="historyDetailTable">
+                            <thead><tr><th>Name</th><th>Status</th></tr></thead>
+                            <tbody id="historyDetailBody"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- FEES SECTION -->
-        <div id="fees" class="section">
-            <div class="card"><h3>Fees Management</h3><tbody id="feesList"></tbody></div>
-        </div>
+        <!-- FEES (Simplified for now) -->
+        <div id="fees" class="section"><div class="card"><h3>Fees Status</h3><p>Management section coming soon.</p></div></div>
     </div>
 
     <script>
+        let students = [];
+        let attendanceData = {}; // Temp storage before final submit
+
         function showSection(id) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
@@ -100,34 +105,80 @@
             document.getElementById('history').style.display = subId === 'history' ? 'block' : 'none';
             document.getElementById('btn-today').classList.toggle('active', subId === 'today');
             document.getElementById('btn-history').classList.toggle('active', subId === 'history');
+            if(subId === 'history') loadHistoryDates();
         }
 
         async function loadData() {
             const res = await fetch('/api/students');
-            const students = await res.json();
+            students = await res.json();
             
-            document.getElementById('homeList').innerHTML = students.map(s => `
-                <tr><td>${s.name}</td><td>${s.class}</td><td>${s.admissionDate || 'N/A'}</td></tr>
-            `).join('');
+            document.getElementById('homeList').innerHTML = students.map(s => `<tr><td>${s.name}</td><td>${s.class}</td></tr>`).join('');
 
             document.getElementById('attendanceTodayList').innerHTML = students.map(s => `
                 <tr>
                     <td>${s.name}</td>
-                    <td>${s.class}</td>
-                    <td><button style="background:#03dac6; padding:5px 10px;" onclick="markPresent('${s.name}', '${s.class}')">Mark Present</button></td>
+                    <td><input type="radio" name="att-${s.name}" onclick="updateTempStatus('${s.name}', 'Present')"></td>
+                    <td><input type="radio" name="att-${s.name}" onclick="updateTempStatus('${s.name}', 'Absent')"></td>
                 </tr>
             `).join('');
         }
 
-        // Logic for marking presence and filtering history would go here
-        function markPresent(name, cls) { alert("Present marked for " + name); }
-        function loadHistory() { /* Future logic for fetching dated records */ }
+        function updateTempStatus(name, status) {
+            attendanceData[name] = status;
+        }
+
+        async function submitAttendance() {
+            const today = new Date().toISOString().split('T')[0];
+            const finalRecord = { date: today, records: attendanceData };
+            
+            // In a real app, you'd fetch/POST this to a new '/api/attendance' route.
+            // For now, we'll simulate saving to localStorage so it works on your screen immediately.
+            let history = JSON.parse(localStorage.getItem('attHistory') || '[]');
+            history.push(finalRecord);
+            localStorage.setItem('attHistory', JSON.stringify(history));
+            
+            alert("Attendance submitted for " + today);
+            attendanceData = {}; // Clear temp
+            showSubSection('history');
+        }
+
+        function loadHistoryDates() {
+            const history = JSON.parse(localStorage.getItem('attHistory') || '[]');
+            const container = document.getElementById('historyDates');
+            const detailView = document.getElementById('historyDetail');
+            
+            if(history.length === 0) {
+                container.innerHTML = "No History Yet";
+                return;
+            }
+
+            detailView.style.display = "none";
+            container.style.display = "block";
+            container.innerHTML = history.map((h, index) => `
+                <div class="history-date" onclick="viewHistoryDetail(${index})">${h.date}</div>
+            `).join('');
+        }
+
+        function viewHistoryDetail(index) {
+            const history = JSON.parse(localStorage.getItem('attHistory'))[index];
+            document.getElementById('historyDates').style.display = "none";
+            document.getElementById('historyDetail').style.display = "block";
+            document.getElementById('viewingDate').innerText = "Records for: " + history.date;
+            
+            document.getElementById('historyDetailBody').innerHTML = Object.entries(history.records).map(([name, status]) => `
+                <tr><td>${name}</td><td>${status}</td></tr>
+            `).join('');
+        }
+
+        function backToDates() {
+            document.getElementById('historyDetail').style.display = "none";
+            document.getElementById('historyDates').style.display = "block";
+        }
 
         async function addStudent() {
             const name = document.getElementById('name').value;
             const cls = document.getElementById('class').value;
             const dt = document.getElementById('date').value;
-            if(!name || !cls || !dt) return alert("Fill all fields!");
             await fetch('/api/students', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -135,6 +186,7 @@
             });
             loadData();
         }
+
         loadData();
     </script>
 </body>
