@@ -8,32 +8,34 @@
         body { background-color: #121212; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; margin: 0; }
         
         /* Navigation Bar */
-        .navbar { background: #1f1b24; display: flex; justify-content: space-around; padding: 15px; border-bottom: 2px solid #bb86fc; position: sticky; top: 0; }
-        .nav-item { color: #bb86fc; text-decoration: none; font-weight: bold; cursor: pointer; padding: 5px 10px; border-radius: 5px; }
+        .navbar { background: #1f1b24; display: flex; justify-content: space-around; padding: 15px; border-bottom: 2px solid #bb86fc; position: sticky; top: 0; z-index: 100; }
+        .nav-item { color: #bb86fc; text-decoration: none; font-weight: bold; cursor: pointer; padding: 5px 15px; border-radius: 5px; transition: 0.3s; }
         .nav-item:hover, .nav-item.active { background: #332940; color: white; }
 
         .container { max-width: 900px; margin: 20px auto; padding: 20px; }
-        .section { display: none; } /* Hidden by default */
-        .section.active { display: block; } /* Show only active section */
+        .section { display: none; } 
+        .section.active { display: block; } 
 
         .card { background: #1e1e1e; padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #333; }
-        input, select { background: #2c2c2c; border: 1px solid #444; color: white; padding: 12px; border-radius: 6px; margin: 5px; width: 180px; }
+        input { background: #2c2c2c; border: 1px solid #444; color: white; padding: 12px; border-radius: 6px; margin: 5px; width: 180px; }
+        input[type="date"] { color-scheme: dark; }
+        
         button { background: #bb86fc; color: #000; border: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        button:hover { background: #a370f7; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
         th { color: #bb86fc; }
         
-        .status-paid { color: #03dac6; font-weight: bold; }
         .status-unpaid { color: #cf6679; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="navbar">
-        <div class="nav-item active" onclick="showSection('home')">Home</div>
-        <div class="nav-item" onclick="showSection('attendance')">Attendance</div>
-        <div class="nav-item" onclick="showSection('fees')">Fees Status</div>
+        <div class="nav-item active" id="nav-home" onclick="showSection('home')">Home</div>
+        <div class="nav-item" id="nav-attendance" onclick="showSection('attendance')">Attendance</div>
+        <div class="nav-item" id="nav-fees" onclick="showSection('fees')">Fees Status</div>
     </div>
 
     <div class="container">
@@ -43,13 +45,14 @@
             <div class="card">
                 <h3>Register New Student</h3>
                 <input type="text" id="name" placeholder="Name">
-                <input type="text" id="class" placeholder="Class">
+                <!-- Class input restricted to numbers 1-12 -->
+                <input type="number" id="class" placeholder="Class (1-12)" min="1" max="12">
                 <input type="date" id="date">
                 <button onclick="addStudent()">Register</button>
             </div>
             <div class="card">
                 <h3>Student List</h3>
-                <table id="studentTable">
+                <table>
                     <thead><tr><th>Name</th><th>Class</th><th>Adm. Date</th></tr></thead>
                     <tbody id="homeList"></tbody>
                 </table>
@@ -81,53 +84,64 @@
     </div>
 
     <script>
-        // Section Switching Logic
         function showSection(id) {
+            // Switch Sections
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.getElementById(id).classList.add('active');
-            event.target.classList.add('active');
+            
+            // Switch Nav Styling
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('nav-' + id).classList.add('active');
         }
 
         async function loadData() {
-            const res = await fetch('/api/students');
-            const students = await res.json();
-            
-            // Home List
-            document.getElementById('homeList').innerHTML = students.map(s => `
-                <tr><td>${s.name}</td><td>${s.class}</td><td>${s.admissionDate || 'N/A'}</td></tr>
-            `).join('');
+            try {
+                const res = await fetch('/api/students');
+                const students = await res.json();
+                
+                // Populate Home
+                document.getElementById('homeList').innerHTML = students.map(s => `
+                    <tr><td>${s.name}</td><td>${s.class}</td><td>${s.admissionDate || 'N/A'}</td></tr>
+                `).join('');
 
-            // Attendance List
-            document.getElementById('attendanceList').innerHTML = students.map(s => `
-                <tr>
-                    <td>${s.name}</td>
-                    <td>${s.class}</td>
-                    <td><button style="padding:5px 10px; font-size:12px;">Mark Present</button></td>
-                </tr>
-            `).join('');
+                // Populate Attendance
+                document.getElementById('attendanceList').innerHTML = students.map(s => `
+                    <tr>
+                        <td>${s.name}</td>
+                        <td>${s.class}</td>
+                        <td><button style="padding:5px 10px; font-size:12px; background:#03dac6;">Mark Present</button></td>
+                    </tr>
+                `).join('');
 
-            // Fees List
-            document.getElementById('feesList').innerHTML = students.map(s => `
-                <tr>
-                    <td>${s.name}</td>
-                    <td>₹1000</td>
-                    <td class="status-unpaid">Pending</td>
-                </tr>
-            `).join('');
+                // Populate Fees
+                document.getElementById('feesList').innerHTML = students.map(s => `
+                    <tr>
+                        <td>${s.name}</td>
+                        <td>₹1000</td>
+                        <td class="status-unpaid">Pending</td>
+                    </tr>
+                `).join('');
+            } catch (err) { console.error("Load error:", err); }
         }
 
         async function addStudent() {
             const name = document.getElementById('name').value;
             const cls = document.getElementById('class').value;
             const dt = document.getElementById('date').value;
-            if(!name || !cls || !dt) return alert("Fill everything!");
+
+            if(!name || !cls || !dt) return alert("Please fill all fields!");
+            if(cls < 1 || cls > 12) return alert("Class must be between 1 and 12");
 
             await fetch('/api/students', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ name, class: cls, admissionDate: dt })
             });
+
+            // Clear inputs
+            document.getElementById('name').value = '';
+            document.getElementById('class').value = '';
+            document.getElementById('date').value = '';
             loadData();
         }
 
