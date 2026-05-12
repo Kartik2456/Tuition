@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tuition Hub | Management</title>
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
@@ -12,25 +13,24 @@
         .light-mode { --bg: #f5f5f5; --card: #ffffff; --text: #121212; --accent: #6200ee; }
 
         body { background-color: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 80px; transition: 0.3s; }
-        .navbar, .bottom-nav { background: var(--card); border-color: var(--accent); }
+        .container { padding: 20px; max-width: 900px; margin: auto; }
         .card { background: var(--card); border: 1px solid #333; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
         
-        .navbar { display: flex; justify-content: space-around; padding: 15px; border-bottom: 2px solid var(--accent); position: sticky; top: 0; z-index: 100; }
-        .nav-item { color: var(--accent); font-weight: bold; cursor: pointer; padding: 5px 15px; }
-        .nav-item.active { background: #332940; color: white; border-radius: 5px; }
+        .navbar, .bottom-nav { background: var(--card); border-color: var(--accent); display: flex; justify-content: space-around; }
+        .navbar { padding: 15px; border-bottom: 2px solid var(--accent); position: sticky; top: 0; z-index: 100; }
+        .bottom-nav { padding: 12px; border-top: 2px solid var(--accent); position: fixed; bottom: 0; width: 100%; }
+        
+        .nav-item, .bottom-item { color: var(--accent); font-weight: bold; cursor: pointer; text-align: center; }
+        .active { color: white !important; background: #332940; border-radius: 5px; padding: 5px 10px; }
 
-        .bottom-nav { display: flex; justify-content: space-around; padding: 12px; border-top: 2px solid var(--accent); position: fixed; bottom: 0; width: 100%; }
-        .bottom-item { color: var(--accent); cursor: pointer; text-align: center; flex: 1; font-size: 14px; }
-        .bottom-item.active { color: white; font-weight: bold; }
-
-        .profile-img { width: 90px; height: 90px; border-radius: 50%; border: 3px solid var(--accent); object-fit: cover; }
         .settings-btn { width: 100%; background: var(--card); color: var(--text); padding: 15px; margin: 8px 0; border-radius: 10px; text-align: left; border: 1px solid #444; cursor: pointer; font-weight: bold; }
         .logout-row { border: 1px solid #cf6679; color: #cf6679 !important; }
         
-        input, button { padding: 12px; border-radius: 8px; border: 1px solid #444; margin: 5px; }
-        button { background: var(--accent); color: black; font-weight: bold; cursor: pointer; border: none; }
-        .del-btn { background: #cf6679; color: white; padding: 5px 10px; font-size: 12px; }
+        .student-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #333; }
+        .del-btn { background: #cf6679; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+        
         .hidden { display: none; }
+        .profile-img { width: 90px; height: 90px; border-radius: 50%; border: 3px solid var(--accent); object-fit: cover; }
     </style>
 </head>
 <body>
@@ -38,21 +38,21 @@
     <!-- HOME VIEW -->
     <div id="view-home">
         <div class="navbar">
-            <div class="nav-item active" onclick="showTab('students')">Students</div>
-            <div class="nav-item" onclick="showTab('attendance')">Attendance</div>
-            <div class="nav-item" onclick="showTab('fees')">Fees Status</div>
+            <div class="nav-item active" onclick="switchTab('students')">Students</div>
+            <div class="nav-item" onclick="switchTab('attendance')">Attendance</div>
+            <div class="nav-item" onclick="switchTab('fees')">Fees Status</div>
         </div>
-        <div class="container" style="padding: 20px;">
-            <div id="students" class="tab-content">
+        <div class="container">
+            <div id="students-tab">
                 <div class="card">
                     <h3>Register New Student</h3>
-                    <input type="text" id="nameInput" placeholder="Name">
-                    <input type="number" id="classInput" placeholder="Class (1-12)" min="1" max="12">
-                    <button onclick="addStudent()">Register</button>
+                    <input type="text" id="nameIn" placeholder="Name" style="padding:10px; border-radius:5px;">
+                    <input type="number" id="classIn" placeholder="Class (1-12)" min="1" max="12" style="padding:10px; border-radius:5px;">
+                    <button onclick="addStudent()" style="background:var(--accent); padding:10px; border-radius:5px; border:none; font-weight:bold;">Register</button>
                 </div>
                 <div class="card">
                     <h3>Student List</h3>
-                    <table width="100%"><tbody id="listBody"></tbody></table>
+                    <div id="mainStudentList"></div>
                 </div>
             </div>
         </div>
@@ -60,39 +60,49 @@
 
     <!-- PROFILE VIEW -->
     <div id="view-profile" class="hidden">
-        <div class="container" style="padding: 20px;">
+        <div class="container">
             <div class="card" style="text-align: center;">
                 <img src="https://via.placeholder.com/90" id="userImg" class="profile-img">
-                <h2 id="userName" style="margin: 10px 0 5px 0;">Loading...</h2>
-                <p id="userEmail" style="opacity: 0.7; margin-bottom: 15px;">...</p>
-                <button onclick="document.getElementById('fileIn').click()">Change Photo</button>
-                <input type="file" id="fileIn" class="hidden" onchange="updatePhoto(event)">
+                <h2 id="userName">User Name</h2>
+                <p id="userEmail">email@example.com</p>
+                <button onclick="document.getElementById('fileInput').click()" style="background:var(--accent); padding:8px; border:none; border-radius:5px;">Change Photo</button>
+                <input type="file" id="fileInput" class="hidden" onchange="updatePhoto(event)">
             </div>
 
             <div class="card">
                 <h3>Settings</h3>
                 <button class="settings-btn" onclick="toggleDarkMode()">🌓 Toggle Dark/Light Mode</button>
-                <div id="delete-list-area">
+                <div id="remove-section">
                     <h4>Select Students to Remove:</h4>
-                    <div id="removeList"></div>
+                    <div id="removalList">Loading students...</div>
                 </div>
                 <button class="settings-btn logout-row" onclick="handleLogout()">🚪 Logout Account</button>
             </div>
         </div>
     </div>
 
+    <!-- BOTTOM NAV -->
     <div class="bottom-nav">
         <div class="bottom-item active" id="btn-home" onclick="switchView('home')">🏠<br>Home</div>
         <div class="bottom-item" id="btn-profile" onclick="switchView('profile')">👤<br>Profile</div>
     </div>
 
     <script>
-        // Use your existing Firebase config here
-        const firebaseConfig = { /* PASTE YOUR CONFIG HERE */ };
+        // PASTE YOUR FIREBASE CONFIG HERE
+        const firebaseConfig = { 
+            apiKey: "...", 
+            authDomain: "...", 
+            projectId: "...", 
+            storageBucket: "...", 
+            messagingSenderId: "...", 
+            appId: "..." 
+        };
+
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
 
+        // 1. View Switching
         function switchView(v) {
             document.getElementById('view-home').classList.toggle('hidden', v !== 'home');
             document.getElementById('view-profile').classList.toggle('hidden', v !== 'profile');
@@ -100,52 +110,70 @@
             document.getElementById('btn-profile').classList.toggle('active', v === 'profile');
         }
 
-        function toggleDarkMode() {
-            document.body.classList.toggle('light-mode');
-        }
+        function toggleDarkMode() { document.body.classList.toggle('light-mode'); }
 
-        async function handleLogout() {
-            await auth.signOut();
-            window.location.reload();
-        }
-
+        // 2. Auth Logic
         auth.onAuthStateChanged(user => {
             if (user) {
                 document.getElementById('userName').innerText = user.displayName || "User";
                 document.getElementById('userEmail').innerText = user.email;
                 if(user.photoURL) document.getElementById('userImg').src = user.photoURL;
-                loadStudents();
+                loadData();
             } else {
-                // If not logged in, you can redirect or show login btn
-                document.getElementById('userName').innerText = "Not Logged In";
+                window.location.href = "/"; // Send to login if not authenticated
             }
         });
 
-        async function loadStudents() {
-            // This is where you pull from Firestore so data syncs to mobile
-            const snapshot = await db.collection('students').get();
-            const list = document.getElementById('listBody');
-            const remList = document.getElementById('removeList');
-            list.innerHTML = ""; remList.innerHTML = "";
-            
-            snapshot.forEach(doc => {
-                const s = doc.data();
-                list.innerHTML += `<tr><td>${s.name}</td><td>Class ${s.class}</td></tr>`;
-                remList.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                    <span>${s.name}</span>
-                    <button class="del-btn" onclick="deleteStudent('${doc.id}')">Remove</button>
-                </div>`;
-            });
-        }
-
-        async function deleteStudent(id) {
-            if(confirm("Delete this student?")) {
-                await db.collection('students').doc(id).delete();
-                loadStudents();
+        async function handleLogout() {
+            try {
+                await auth.signOut();
+                console.log("Logged out successfully");
+            } catch (error) {
+                alert("Error logging out: " + error.message);
             }
         }
 
-        function showTab(t) { /* Logic for top Students/Attendance/Fees tabs */ }
+        // 3. Data Logic
+        async function loadData() {
+            const snapshot = await db.collection('students').get();
+            const mainList = document.getElementById('mainStudentList');
+            const removalList = document.getElementById('removalList');
+            
+            mainList.innerHTML = "";
+            removalList.innerHTML = "";
+
+            if (snapshot.empty) {
+                removalList.innerHTML = "No students found.";
+                return;
+            }
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                // Home List
+                mainList.innerHTML += `<div class="student-item"><span>${data.name}</span><span>Class ${data.class}</span></div>`;
+                // Removal List in Profile
+                removalList.innerHTML += `
+                    <div class="student-item">
+                        <span>${data.name}</span>
+                        <button class="del-btn" onclick="deleteStudent('${doc.id}')">Remove</button>
+                    </div>`;
+            });
+        }
+
+        async function addStudent() {
+            const name = document.getElementById('nameIn').value;
+            const cls = document.getElementById('classIn').value;
+            if(!name || !cls) return alert("Fill all fields");
+            await db.collection('students').add({ name, class: cls, date: new Date().toISOString() });
+            loadData();
+        }
+
+        async function deleteStudent(id) {
+            if(confirm("Are you sure?")) {
+                await db.collection('students').doc(id).delete();
+                loadData();
+            }
+        }
     </script>
 </body>
 </html>
