@@ -8,139 +8,144 @@
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
     <style>
-        body { background-color: #121212; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 70px; }
+        :root { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --accent: #bb86fc; }
+        .light-mode { --bg: #f5f5f5; --card: #ffffff; --text: #121212; --accent: #6200ee; }
+
+        body { background-color: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 80px; transition: 0.3s; }
+        .navbar, .bottom-nav { background: var(--card); border-color: var(--accent); }
+        .card { background: var(--card); border: 1px solid #333; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
         
-        /* Top Navigation */
-        .navbar { background: #1f1b24; display: flex; justify-content: space-around; padding: 15px; border-bottom: 2px solid #bb86fc; position: sticky; top: 0; z-index: 100; }
-        .nav-item { color: #bb86fc; font-weight: bold; cursor: pointer; padding: 5px 15px; border-radius: 5px; }
-        .nav-item.active { background: #332940; color: white; }
+        .navbar { display: flex; justify-content: space-around; padding: 15px; border-bottom: 2px solid var(--accent); position: sticky; top: 0; z-index: 100; }
+        .nav-item { color: var(--accent); font-weight: bold; cursor: pointer; padding: 5px 15px; }
+        .nav-item.active { background: #332940; color: white; border-radius: 5px; }
 
-        /* Bottom Navigation */
-        .bottom-nav { background: #1f1b24; display: flex; justify-content: space-around; padding: 12px; border-top: 2px solid #bb86fc; position: fixed; bottom: 0; width: 100%; z-index: 100; }
-        .bottom-item { color: #bb86fc; font-weight: bold; cursor: pointer; text-align: center; flex: 1; }
-        .bottom-item.active { color: white; }
+        .bottom-nav { display: flex; justify-content: space-around; padding: 12px; border-top: 2px solid var(--accent); position: fixed; bottom: 0; width: 100%; }
+        .bottom-item { color: var(--accent); cursor: pointer; text-align: center; flex: 1; font-size: 14px; }
+        .bottom-item.active { color: white; font-weight: bold; }
 
-        .container { max-width: 1000px; margin: 20px auto; padding: 20px; }
-        .section { display: none; } 
-        .section.active { display: block; } 
-        .card { background: #1e1e1e; padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #333; }
+        .profile-img { width: 90px; height: 90px; border-radius: 50%; border: 3px solid var(--accent); object-fit: cover; }
+        .settings-btn { width: 100%; background: var(--card); color: var(--text); padding: 15px; margin: 8px 0; border-radius: 10px; text-align: left; border: 1px solid #444; cursor: pointer; font-weight: bold; }
+        .logout-row { border: 1px solid #cf6679; color: #cf6679 !important; }
         
-        /* Profile Styling */
-        .profile-img { width: 100px; height: 100px; border-radius: 50%; border: 2px solid #bb86fc; object-fit: cover; margin-bottom: 15px; }
-        .settings-btn { display: block; width: 100%; background: #333; color: white; padding: 15px; margin: 10px 0; border-radius: 8px; text-align: left; border: 1px solid #444; }
-        .logout-btn { color: #cf6679; border-color: #cf6679; }
-
-        input { background: #2c2c2c; border: 1px solid #444; color: white; padding: 10px; border-radius: 6px; margin: 5px; }
-        button { background: #bb86fc; color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #333; }
-        th { color: #bb86fc; }
+        input, button { padding: 12px; border-radius: 8px; border: 1px solid #444; margin: 5px; }
+        button { background: var(--accent); color: black; font-weight: bold; cursor: pointer; border: none; }
+        .del-btn { background: #cf6679; color: white; padding: 5px 10px; font-size: 12px; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
-    <!-- MAIN VIEW (Home) -->
-    <div id="view-home" class="view">
+    <!-- HOME VIEW -->
+    <div id="view-home">
         <div class="navbar">
-            <div class="nav-item active" id="nav-students" onclick="showSection('students')">Students</div>
-            <div class="nav-item" id="nav-attendance" onclick="showSection('attendance')">Attendance</div>
-            <div class="nav-item" id="nav-fees" onclick="showSection('fees')">Fees Status</div>
+            <div class="nav-item active" onclick="showTab('students')">Students</div>
+            <div class="nav-item" onclick="showTab('attendance')">Attendance</div>
+            <div class="nav-item" onclick="showTab('fees')">Fees Status</div>
         </div>
-        <div class="container">
-            <div id="students" class="section active">
+        <div class="container" style="padding: 20px;">
+            <div id="students" class="tab-content">
                 <div class="card">
                     <h3>Register New Student</h3>
-                    <input type="text" id="s-name" placeholder="Name">
-                    <input type="number" id="s-class" placeholder="Class (1-12)" min="1" max="12">
-                    <input type="date" id="s-date">
+                    <input type="text" id="nameInput" placeholder="Name">
+                    <input type="number" id="classInput" placeholder="Class (1-12)" min="1" max="12">
                     <button onclick="addStudent()">Register</button>
                 </div>
                 <div class="card">
                     <h3>Student List</h3>
-                    <table><thead><tr><th>Name</th><th>Class</th><th>Adm. Date</th></tr></thead><tbody id="student-list-body"></tbody></table>
+                    <table width="100%"><tbody id="listBody"></tbody></table>
                 </div>
             </div>
-            <!-- Attendance and Fees sections go here as before -->
         </div>
     </div>
 
     <!-- PROFILE VIEW -->
-    <div id="view-profile" class="view" style="display: none;">
-        <div class="container">
+    <div id="view-profile" class="hidden">
+        <div class="container" style="padding: 20px;">
             <div class="card" style="text-align: center;">
-                <img src="https://via.placeholder.com/100" id="user-photo" class="profile-img">
-                <br>
-                <input type="file" id="photo-upload" style="display: none;" onchange="uploadPhoto(event)">
-                <button onclick="document.getElementById('photo-upload').click()">Set Profile Photo</button>
-                <h2 id="display-name">User Name</h2>
-                <p id="display-email">email@example.com</p>
+                <img src="https://via.placeholder.com/90" id="userImg" class="profile-img">
+                <h2 id="userName" style="margin: 10px 0 5px 0;">Loading...</h2>
+                <p id="userEmail" style="opacity: 0.7; margin-bottom: 15px;">...</p>
+                <button onclick="document.getElementById('fileIn').click()">Change Photo</button>
+                <input type="file" id="fileIn" class="hidden" onchange="updatePhoto(event)">
             </div>
 
             <div class="card">
-                <h3>Management & Settings</h3>
-                <button class="settings-btn" onclick="removeAllStudents()">🗑️ Remove All Students</button>
-                <button class="settings-btn">🌙 Dark Mode (Always On)</button>
-                <button class="settings-btn">🔔 Notification Settings</button>
-                <button class="settings-btn logout-btn" onclick="logout()">🚪 Logout</button>
+                <h3>Settings</h3>
+                <button class="settings-btn" onclick="toggleDarkMode()">🌓 Toggle Dark/Light Mode</button>
+                <div id="delete-list-area">
+                    <h4>Select Students to Remove:</h4>
+                    <div id="removeList"></div>
+                </div>
+                <button class="settings-btn logout-row" onclick="handleLogout()">🚪 Logout Account</button>
             </div>
         </div>
     </div>
 
-    <!-- BOTTOM NAVIGATION -->
     <div class="bottom-nav">
-        <div class="bottom-item active" id="bot-home" onclick="switchView('home')">🏠<br>Home</div>
-        <div class="bottom-item" id="bot-profile" onclick="switchView('profile')">👤<br>Profile</div>
+        <div class="bottom-item active" id="btn-home" onclick="switchView('home')">🏠<br>Home</div>
+        <div class="bottom-item" id="btn-profile" onclick="switchView('profile')">👤<br>Profile</div>
     </div>
 
     <script>
-        // Use your Firebase Config here
-        const firebaseConfig = { /* YOUR CONFIG */ };
+        // Use your existing Firebase config here
+        const firebaseConfig = { /* PASTE YOUR CONFIG HERE */ };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
+        const db = firebase.firestore();
 
-        function switchView(view) {
-            document.getElementById('view-home').style.display = view === 'home' ? 'block' : 'none';
-            document.getElementById('view-profile').style.display = view === 'profile' ? 'block' : 'none';
-            
-            document.getElementById('bot-home').classList.toggle('active', view === 'home');
-            document.getElementById('bot-profile').classList.toggle('active', view === 'profile');
+        function switchView(v) {
+            document.getElementById('view-home').classList.toggle('hidden', v !== 'home');
+            document.getElementById('view-profile').classList.toggle('hidden', v !== 'profile');
+            document.getElementById('btn-home').classList.toggle('active', v === 'home');
+            document.getElementById('btn-profile').classList.toggle('active', v === 'profile');
         }
 
-        function showSection(id) {
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById('nav-' + id).classList.add('active');
+        function toggleDarkMode() {
+            document.body.classList.toggle('light-mode');
         }
 
-        function uploadPhoto(event) {
-            const reader = new FileReader();
-            reader.onload = function() {
-                document.getElementById('user-photo').src = reader.result;
-                localStorage.setItem('profilePhoto', reader.result);
-            }
-            reader.readAsDataURL(event.target.files[0]);
+        async function handleLogout() {
+            await auth.signOut();
+            window.location.reload();
         }
 
-        function removeAllStudents() {
-            if(confirm("Are you sure you want to delete all student records? This cannot be undone.")) {
-                // Logic to clear Firestore collection
-                alert("All students removed.");
-            }
-        }
-
-        function logout() { auth.signOut(); }
-
-        // On Load
         auth.onAuthStateChanged(user => {
             if (user) {
-                document.getElementById('display-name').innerText = user.displayName || "Teacher";
-                document.getElementById('display-email').innerText = user.email;
-                if(localStorage.getItem('profilePhoto')) {
-                    document.getElementById('user-photo').src = localStorage.getItem('profilePhoto');
-                }
+                document.getElementById('userName').innerText = user.displayName || "User";
+                document.getElementById('userEmail').innerText = user.email;
+                if(user.photoURL) document.getElementById('userImg').src = user.photoURL;
+                loadStudents();
+            } else {
+                // If not logged in, you can redirect or show login btn
+                document.getElementById('userName').innerText = "Not Logged In";
             }
         });
+
+        async function loadStudents() {
+            // This is where you pull from Firestore so data syncs to mobile
+            const snapshot = await db.collection('students').get();
+            const list = document.getElementById('listBody');
+            const remList = document.getElementById('removeList');
+            list.innerHTML = ""; remList.innerHTML = "";
+            
+            snapshot.forEach(doc => {
+                const s = doc.data();
+                list.innerHTML += `<tr><td>${s.name}</td><td>Class ${s.class}</td></tr>`;
+                remList.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                    <span>${s.name}</span>
+                    <button class="del-btn" onclick="deleteStudent('${doc.id}')">Remove</button>
+                </div>`;
+            });
+        }
+
+        async function deleteStudent(id) {
+            if(confirm("Delete this student?")) {
+                await db.collection('students').doc(id).delete();
+                loadStudents();
+            }
+        }
+
+        function showTab(t) { /* Logic for top Students/Attendance/Fees tabs */ }
     </script>
 </body>
 </html>
