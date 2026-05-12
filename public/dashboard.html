@@ -11,47 +11,84 @@
     <style>
         :root { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --accent: #bb86fc; --green: #03dac6; --red: #cf6679; }
         body { background-color: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 80px; overflow-x: hidden; }
+        
         .hidden { display: none !important; }
         .section { display: none; }
         .section.active { display: block; }
+
+        /* Navigation Styles */
         .navbar { background: #1f1b24; display: flex; justify-content: space-around; padding: 15px; border-bottom: 2px solid var(--accent); position: sticky; top: 0; z-index: 100; }
         .nav-item { color: var(--accent); font-weight: bold; cursor: pointer; padding: 8px 20px; border-radius: 8px; }
         .nav-item.active { background: #332940; color: white; box-shadow: 0 0 10px var(--accent); }
-        .sub-nav { display: flex; gap: 15px; margin-bottom: 20px; }
-        .sub-item { color: var(--accent); cursor: pointer; font-size: 14px; padding: 5px 12px; border: 1px solid var(--accent); border-radius: 20px; }
-        .sub-item.active { background: var(--accent); color: #000; }
         .bottom-nav { background: #1f1b24; display: flex; justify-content: space-around; padding: 12px; border-top: 2px solid var(--accent); position: fixed; bottom: 0; width: 100%; z-index: 100; }
         .bottom-item { color: var(--accent); font-weight: bold; cursor: pointer; text-align: center; flex: 1; opacity: 0.6; }
         .bottom-item.active { color: white; opacity: 1; }
+
+        /* Attendance Sub-Nav */
+        .sub-nav { display: flex; gap: 15px; margin-bottom: 20px; }
+        .sub-item { color: var(--accent); cursor: pointer; font-size: 14px; padding: 5px 12px; border: 1px solid var(--accent); border-radius: 20px; }
+        .sub-item.active { background: var(--accent); color: #000; }
+
         .container { max-width: 1000px; margin: 20px auto; padding: 0 20px; }
         .card { background: var(--card); padding: 25px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #333; }
+        
+        /* Group Selection Cards */
+        .group-card { background: #252525; padding: 15px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid var(--accent); cursor: pointer; transition: 0.2s; }
+        .group-card:hover { background: #2d2d2d; transform: scale(1.01); }
+
         input, button { background: #2c2c2c; border: 1px solid #444; color: white; padding: 10px; border-radius: 6px; margin: 5px; }
         input[type="radio"] { transform: scale(1.8); cursor: pointer; accent-color: var(--accent); margin-right: 5px; vertical-align: middle; }
         button { background: var(--accent); color: #000; border: none; font-weight: bold; cursor: pointer; }
+        .btn-submit-date { background: var(--green); color: #000; padding: 8px 15px; }
+        
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 15px; text-align: left; border-bottom: 1px solid #333; }
         th { color: var(--accent); font-size: 13px; text-transform: uppercase; }
+        .fees-done { color: var(--green); font-weight: bold; font-style: italic; }
         .history-card { background: #252525; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--accent); }
     </style>
 </head>
 <body>
 
-    <div id="view-auth" style="display: flex; justify-content: center; align-items: center; height: 100vh;">
+    <!-- 1. LOGIN GATE -->
+    <div id="view-auth" class="hidden" style="display: flex; justify-content: center; align-items: center; height: 100vh;">
         <div class="card" style="text-align: center; width: 320px;">
             <h1 style="color: var(--accent);">Tuition Hub</h1>
             <button onclick="handleLogin()" style="background: white; color: black; width: 100%; padding: 15px;">Sign in with Google</button>
         </div>
     </div>
 
+    <!-- 2. GROUP SELECTOR / SETUP GATE -->
+    <div id="view-setup" class="hidden">
+        <div class="container">
+            <h2 style="color: var(--accent);">Your Batches</h2>
+            <div id="groupListContainer"></div>
+            
+            <div class="card" style="margin-top: 30px;">
+                <h3>Start New or Join</h3>
+                <input type="text" id="newGroupName" placeholder="Enter Batch Name" style="width: 60%;">
+                <button onclick="createGroup()">Create</button>
+                <hr style="border: 0.5px solid #444; margin: 20px 0;">
+                <input type="text" id="joinCodeInput" placeholder="Enter Invite Code" style="width: 60%;">
+                <button onclick="joinGroup()" style="background: var(--green);">Join</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. MAIN DASHBOARD UI -->
     <div id="main-ui" class="hidden">
         <div id="view-home">
             <div class="navbar">
                 <div class="nav-item active" id="tab-students" onclick="showSection('students')">Students</div>
                 <div class="nav-item" id="tab-attendance" onclick="showSection('attendance')">Attendance</div>
                 <div class="nav-item" id="tab-fees" onclick="showSection('fees')">Fees Status</div>
+                <div class="nav-item" style="color: var(--red);" onclick="exitGroup()">Switch Batch</div>
             </div>
 
             <div class="container">
+                <h2 id="activeGroupName" style="color: var(--accent); margin-bottom: 20px;"></h2>
+
+                <!-- Students Section -->
                 <div id="section-students" class="section active">
                     <div class="card">
                         <h3>Register Student</h3>
@@ -61,51 +98,50 @@
                         <button onclick="addStudent()">Register</button>
                     </div>
                     <div class="card">
-                        <h3>Student History</h3>
-                        <table><thead><tr><th>Name</th><th>Class</th><th>Adm. Date</th></tr></thead><tbody id="homeList"></tbody></table>
+                        <table><thead><tr><th>Name</th><th>Class</th><th>Date</th></tr></thead><tbody id="homeList"></tbody></table>
                     </div>
                 </div>
 
+                <!-- Attendance Section -->
                 <div id="section-attendance" class="section">
                     <div class="sub-nav">
                         <div class="sub-item active" id="sub-today" onclick="switchAttBranch('today')">Today (<span id="currentDateDisplay"></span>)</div>
                         <div class="sub-item" id="sub-history" onclick="switchAttBranch('history')">History</div>
                     </div>
-
                     <div id="branch-today" class="att-branch">
-                        <div class="card" style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;" id="att-container">
+                        <div class="card" style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
                             <div style="flex: 3; min-width: 300px;">
                                 <table><thead><tr><th>Name</th><th style="text-align:center;">P</th><th style="text-align:center;">A</th></tr></thead><tbody id="attList"></tbody></table>
                             </div>
                             <button id="submit-att-btn" onclick="submitAttendance()" style="flex: 1; background: var(--green); padding: 30px; font-size: 20px; border-radius: 12px; min-width: 200px;">Submit</button>
                         </div>
                     </div>
-
                     <div id="branch-history" class="att-branch hidden">
-                        <div id="historyLogs">Loading history...</div>
+                        <div id="historyLogs">No attendance history yet.</div>
                     </div>
                 </div>
 
+                <!-- Fees Section -->
                 <div id="section-fees" class="section">
                     <div class="card">
-                        <h3>Monthly Fees Tracker</h3>
-                        <table><thead><tr><th>Student Name</th><th>Status Selection</th></tr></thead><tbody id="feesList"></tbody></table>
+                        <h3>Fees Tracker</h3>
+                        <table><thead><tr><th>Name</th><th>Status</th></tr></thead><tbody id="feesList"></tbody></table>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Profile View -->
         <div id="view-profile" class="hidden">
             <div class="container">
                 <div class="card" style="text-align: center;">
-                    <img id="userImg" style="width:100px; height:100px; border-radius:50%; border:3px solid var(--accent);">
-                    <h2 id="userName"></h2>
-                    <p id="userEmail" style="opacity:0.6;"></p>
-                    <button onclick="handleLogout()" style="background:var(--red); color:white; width:100%; margin-top:20px;">Logout</button>
+                    <img id="userImg" style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--accent); margin-bottom: 10px;">
+                    <h2 id="userNameDisplay"></h2>
+                    <button onclick="handleLogout()" style="background: var(--red); color: white; width: 100%;">Logout Account</button>
                 </div>
                 <div class="card">
-                    <h3>Remove Students</h3>
-                    <div id="removalList"></div>
+                    <h3>Batch Join Codes</h3>
+                    <div id="profileGroupList"></div>
                 </div>
             </div>
         </div>
@@ -129,63 +165,100 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
+        let activeGroupID = null;
         document.getElementById('currentDateDisplay').innerText = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
 
-        function showSection(id) {
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            document.getElementById('section-' + id).classList.add('active');
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById('tab-' + id).classList.add('active');
-        }
-
-        function switchAttBranch(branch) {
-            document.getElementById('branch-today').classList.toggle('hidden', branch !== 'today');
-            document.getElementById('branch-history').classList.toggle('hidden', branch !== 'history');
-            document.getElementById('sub-today').classList.toggle('active', branch === 'today');
-            document.getElementById('sub-history').classList.toggle('active', branch === 'history');
-            if(branch === 'history') loadAttendanceHistory();
-        }
-
-        function switchView(view) {
-            document.getElementById('view-home').classList.toggle('hidden', view !== 'home');
-            document.getElementById('view-profile').classList.toggle('hidden', view !== 'profile');
-            document.getElementById('bot-home').classList.toggle('active', view === 'home');
-            document.getElementById('bot-profile').classList.toggle('active', view === 'profile');
-        }
-
-        auth.onAuthStateChanged(user => {
+        // VERIFICATION & AUTH BRAIN
+        auth.onAuthStateChanged(async (user) => {
             if (user) {
                 document.getElementById('view-auth').classList.add('hidden');
-                document.getElementById('main-ui').classList.remove('hidden');
-                document.getElementById('userName').innerText = user.displayName;
-                document.getElementById('userEmail').innerText = user.email;
+                document.getElementById('userNameDisplay').innerText = user.displayName;
                 if(user.photoURL) document.getElementById('userImg').src = user.photoURL;
-                loadData();
+                loadUserGroups(); 
             } else {
                 document.getElementById('view-auth').classList.remove('hidden');
+                document.getElementById('view-setup').classList.add('hidden');
                 document.getElementById('main-ui').classList.add('hidden');
             }
         });
 
-        function handleLogin() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
-        function handleLogout() { auth.signOut().then(() => window.location.href = "index.html"); }
+        async function loadUserGroups() {
+            const snapshot = await db.collection('members').where('uid', '==', auth.currentUser.uid).get();
+            const groupList = document.getElementById('groupListContainer');
+            const profileList = document.getElementById('profileGroupList');
+            groupList.innerHTML = ""; profileList.innerHTML = "";
+
+            if (snapshot.empty && !activeGroupID) {
+                document.getElementById('view-setup').classList.remove('hidden');
+                return;
+            }
+
+            snapshot.forEach(async (memberDoc) => {
+                const groupDoc = await db.collection('groups').doc(memberDoc.data().groupId).get();
+                const data = groupDoc.data();
+                const card = `
+                    <div class="group-card" onclick="enterGroup('${groupDoc.id}', '${data.name}')">
+                        <span>${data.name}</span>
+                        <small style="color: var(--accent);">CODE: ${data.code}</small>
+                    </div>`;
+                groupList.innerHTML += card;
+                profileList.innerHTML += card;
+            });
+            
+            if (!activeGroupID) document.getElementById('view-setup').classList.remove('hidden');
+        }
+
+        async function createGroup() {
+            const name = document.getElementById('newGroupName').value;
+            if(!name) return alert("Batch name is required!");
+            const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+            const groupRef = await db.collection('groups').add({ name, code, owner: auth.currentUser.uid });
+            await db.collection('members').add({ uid: auth.currentUser.uid, groupId: groupRef.id });
+            location.reload();
+        }
+
+        async function joinGroup() {
+            const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
+            const snapshot = await db.collection('groups').where('code', '==', code).get();
+            if(snapshot.empty) return alert("Invalid Code!");
+            await db.collection('members').add({ uid: auth.currentUser.uid, groupId: snapshot.docs[0].id });
+            location.reload();
+        }
+
+        function enterGroup(id, name) {
+            activeGroupID = id;
+            document.getElementById('activeGroupName').innerText = name;
+            document.getElementById('view-setup').classList.add('hidden');
+            document.getElementById('main-ui').classList.remove('hidden');
+            loadData();
+        }
+
+        function exitGroup() { activeGroupID = null; loadUserGroups(); document.getElementById('main-ui').classList.add('hidden'); }
 
         async function loadData() {
-            const snapshot = await db.collection('students').orderBy('name').get();
+            const snapshot = await db.collection('students').where('groupId', '==', activeGroupID).get();
             const home = document.getElementById('homeList');
             const att = document.getElementById('attList');
             const fees = document.getElementById('feesList');
-            const rem = document.getElementById('removalList');
-            home.innerHTML = ""; att.innerHTML = ""; fees.innerHTML = ""; rem.innerHTML = "";
+            home.innerHTML = ""; att.innerHTML = ""; fees.innerHTML = "";
 
             snapshot.forEach(doc => {
                 const s = doc.data();
                 const id = doc.id;
                 home.innerHTML += `<tr><td>${s.name}</td><td>${s.class}</td><td>${s.admissionDate}</td></tr>`;
                 att.innerHTML += `<tr><td>${s.name}</td><td style="text-align:center;"><input type="radio" name="at-${id}"></td><td style="text-align:center;"><input type="radio" name="at-${id}"></td></tr>`;
-                fees.innerHTML += `<tr><td>${s.name}</td><td id="fees-container-${id}"><input type="radio" name="pay-${id}" id="p-${id}" onclick="toggleDateInput('${id}')"><label for="p-${id}">Paid</label><input type="radio" name="pay-${id}" id="pn-${id}" checked><label for="pn-${id}">Pending</label></td></tr>`;
-                rem.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #333;"><span>${s.name}</span><button onclick="deleteStudent('${id}')" style="background:var(--red); padding:5px 12px; font-size:12px;">Delete</button></div>`;
+                fees.innerHTML += `<tr><td>${s.name}</td><td id="f-cont-${id}"><input type="radio" name="p-${id}" id="pd-${id}" onclick="toggleDateInput('${id}')"><label for="pd-${id}">Paid</label> <input type="radio" name="p-${id}" id="pn-${id}" checked><label for="pn-${id}">Pending</label></td></tr>`;
             });
+        }
+
+        function toggleDateInput(id) {
+            document.getElementById('f-cont-' + id).innerHTML = `<input type="date" id="date-${id}" style="color-scheme:dark;"><button class="btn-submit-date" onclick="submitFees('${id}')">Submit</button>`;
+        }
+
+        function submitFees(id) {
+            const dateVal = document.getElementById('date-' + id).value;
+            if (!dateVal) return alert("Pick a date!");
+            document.getElementById('f-cont-' + id).innerHTML = `<span class="fees-done">Fees is submitted on ${dateVal.split('-').reverse().join('-')}</span>`;
         }
 
         async function submitAttendance() {
@@ -194,64 +267,57 @@
             document.querySelectorAll('#attList tr').forEach(row => {
                 const name = row.cells[0].innerText;
                 const radios = row.querySelectorAll('input[type="radio"]');
-                let status = radios[0].checked ? "Present" : (radios[1].checked ? "Absent" : "Not Marked");
-                records.push({ name, status });
+                records.push({ name, status: radios[0].checked ? "Present" : (radios[1].checked ? "Absent" : "Not Marked") });
             });
-
-            await db.collection('attendance').doc(today).set({ date: today, records, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-            
-            // THE FIX: Change button text
+            await db.collection('attendance').add({ date: today, groupId: activeGroupID, records, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
             const btn = document.getElementById('submit-att-btn');
-            btn.innerText = "Submitted";
-            btn.style.background = "#333";
-            btn.style.color = "var(--green)";
-            btn.disabled = true;
-
-            alert("Attendance saved!");
+            btn.innerText = "Submitted"; btn.style.background = "#333"; btn.disabled = true;
+            alert("Attendance Recorded!");
         }
 
         async function loadAttendanceHistory() {
             const logDiv = document.getElementById('historyLogs');
-            const snapshot = await db.collection('attendance').orderBy('timestamp', 'desc').get();
-            if(snapshot.empty) { logDiv.innerHTML = "No history logs yet."; return; }
+            const snapshot = await db.collection('attendance').where('groupId', '==', activeGroupID).orderBy('timestamp', 'desc').get();
+            if(snapshot.empty) { logDiv.innerHTML = "No logs."; return; }
             logDiv.innerHTML = "";
             snapshot.forEach(doc => {
-                const data = doc.data();
-                let tableHtml = `<div class="history-card"><strong>Date: ${data.date}</strong><hr style="border:0.5px solid #444; margin:10px 0;">`;
-                data.records.forEach(r => {
-                    tableHtml += `<div>${r.name}: <span style="color:${r.status==='Present'? 'var(--green)':'var(--red)'}">${r.status}</span></div>`;
-                });
-                tableHtml += `</div>`;
-                logDiv.innerHTML += tableHtml;
+                const d = doc.data();
+                let html = `<div class="history-card"><strong>${d.date}</strong><hr style="border:0.5px solid #444; margin:8px 0;">`;
+                d.records.forEach(r => html += `<div>${r.name}: <span style="color:${r.status==='Present'?'var(--green)':'var(--red)'}">${r.status}</span></div>`);
+                logDiv.innerHTML += html + `</div>`;
             });
         }
 
-        function toggleDateInput(id) {
-            const container = document.getElementById('fees-container-' + id);
-            container.innerHTML = `<input type="date" id="date-${id}" style="color-scheme:dark; margin-right:10px;"><button class="btn-submit-date" onclick="submitFees('${id}')">Submit Date</button>`;
-        }
-
-        function submitFees(id) {
-            const dateVal = document.getElementById('date-' + id).value;
-            if (!dateVal) return alert("Select payment date!");
-            const container = document.getElementById('fees-container-' + id);
-            container.innerHTML = `<span style="color:var(--green); font-weight:bold; font-style:italic;">Fees is submitted on ${dateVal.split('-').reverse().join('-')}</span>`;
+        function switchAttBranch(b) {
+            document.getElementById('branch-today').classList.toggle('hidden', b !== 'today');
+            document.getElementById('branch-history').classList.toggle('hidden', b !== 'history');
+            document.getElementById('sub-today').classList.toggle('active', b === 'today');
+            document.getElementById('sub-history').classList.toggle('active', b === 'history');
+            if(b === 'history') loadAttendanceHistory();
         }
 
         async function addStudent() {
             const name = document.getElementById('s-name').value;
             const cls = document.getElementById('s-class').value;
             const date = document.getElementById('s-date').value;
-            if(!name || !cls || !date) return alert("Fill all details!");
-            await db.collection('students').add({ name, class: cls, admissionDate: date });
+            if(!name || !cls) return;
+            await db.collection('students').add({ name, class: cls, admissionDate: date, groupId: activeGroupID });
             loadData();
         }
 
-        async function deleteStudent(id) {
-            if(confirm("Delete student?")) {
-                await db.collection('students').doc(id).delete();
-                loadData();
-            }
+        function handleLogin() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+        function handleLogout() { auth.signOut().then(() => window.location.href = "index.html"); }
+        function showSection(id) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById('section-' + id).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('tab-' + id).classList.add('active');
+        }
+        function switchView(v) {
+            document.getElementById('view-home').classList.toggle('hidden', v !== 'home');
+            document.getElementById('view-profile').classList.toggle('hidden', v !== 'profile');
+            document.getElementById('bot-home').classList.toggle('active', v === 'home');
+            document.getElementById('bot-profile').classList.toggle('active', v === 'profile');
         }
     </script>
 </body>
