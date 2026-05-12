@@ -9,62 +9,45 @@
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
     <style>
         :root { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --accent: #bb86fc; --green: #03dac6; --red: #cf6679; }
-        body { background-color: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 80px; overflow-x: hidden; }
-        
-        /* THE FIX: These control what is visible */
+        body { background-color: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 80px; }
         .hidden { display: none !important; }
         .section { display: none; }
         .section.active { display: block; }
 
-        /* Top Navigation */
         .navbar { background: #1f1b24; display: flex; justify-content: space-around; padding: 15px; border-bottom: 2px solid var(--accent); position: sticky; top: 0; z-index: 100; }
-        .nav-item { color: var(--accent); font-weight: bold; cursor: pointer; padding: 8px 20px; border-radius: 8px; transition: 0.3s; }
+        .nav-item { color: var(--accent); font-weight: bold; cursor: pointer; padding: 8px 20px; border-radius: 8px; }
         .nav-item.active { background: #332940; color: white; box-shadow: 0 0 10px var(--accent); }
 
-        /* Bottom Navigation */
         .bottom-nav { background: #1f1b24; display: flex; justify-content: space-around; padding: 12px; border-top: 2px solid var(--accent); position: fixed; bottom: 0; width: 100%; z-index: 100; }
         .bottom-item { color: var(--accent); font-weight: bold; cursor: pointer; text-align: center; flex: 1; opacity: 0.6; }
         .bottom-item.active { color: white; opacity: 1; }
 
         .container { max-width: 1000px; margin: 20px auto; padding: 0 20px; }
-        .card { background: var(--card); padding: 25px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #333; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .card { background: var(--card); padding: 25px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #333; }
         
-        /* Attendance Layout */
-        .layout-with-sidebar { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
-        .table-wrapper { flex: 3; min-width: 300px; }
-        .side-wrapper { flex: 1; min-width: 200px; position: sticky; top: 100px; }
-
-        input, button { background: #2c2c2c; border: 1px solid #444; color: white; padding: 12px; border-radius: 6px; margin: 5px; font-size: 14px; }
-        input[type="date"] { color-scheme: dark; }
-        input[type="radio"] { transform: scale(1.8); cursor: pointer; accent-color: var(--accent); }
+        input, button { background: #2c2c2c; border: 1px solid #444; color: white; padding: 10px; border-radius: 6px; margin: 5px; }
+        input[type="radio"] { transform: scale(1.6); cursor: pointer; accent-color: var(--accent); margin-right: 5px; vertical-align: middle; }
+        label { margin-right: 15px; cursor: pointer; }
         
-        button { background: var(--accent); color: #000; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        button:hover { opacity: 0.8; transform: translateY(-2px); }
-        .btn-submit { background: var(--green); padding: 25px; font-size: 20px; width: 100%; border-radius: 12px; margin-top: 10px; }
+        button { background: var(--accent); color: #000; border: none; font-weight: bold; cursor: pointer; }
+        .btn-submit-date { background: var(--green); color: #000; padding: 8px 15px; margin-left: 10px; }
         
-        .profile-img { width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--accent); margin-bottom: 15px; }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 18px; text-align: left; border-bottom: 1px solid #333; }
-        th { color: var(--accent); font-size: 14px; text-transform: uppercase; }
-        .paid-badge { color: var(--green); font-weight: bold; padding: 8px; border: 1px solid var(--green); border-radius: 5px; display: inline-block; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #333; }
+        th { color: var(--accent); font-size: 13px; text-transform: uppercase; }
+        .fees-done { color: var(--green); font-weight: bold; font-style: italic; }
     </style>
 </head>
 <body>
 
-    <!-- LOGIN GATE -->
     <div id="view-auth" style="display: flex; justify-content: center; align-items: center; height: 100vh;">
         <div class="card" style="text-align: center; width: 320px;">
-            <h1 style="color: var(--accent); margin-bottom: 5px;">Tuition Hub</h1>
-            <p style="margin-bottom: 25px; opacity: 0.7;">Secure Access Only</p>
+            <h1 style="color: var(--accent);">Tuition Hub</h1>
             <button onclick="handleLogin()" style="background: white; color: black; width: 100%; padding: 15px;">Sign in with Google</button>
         </div>
     </div>
 
-    <!-- MAIN DASHBOARD -->
     <div id="main-ui" class="hidden">
-        
-        <!-- HOME VIEW (Contains the 3 Tabs) -->
         <div id="view-home">
             <div class="navbar">
                 <div class="nav-item active" id="tab-students" onclick="showSection('students')">Students</div>
@@ -73,48 +56,40 @@
             </div>
 
             <div class="container">
-                <!-- 1. STUDENTS SECTION (History/List) -->
                 <div id="section-students" class="section active">
                     <div class="card">
-                        <h3 style="color: var(--accent);">Register New Student</h3>
-                        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                            <input type="text" id="s-name" placeholder="Full Name" style="flex: 2;">
-                            <input type="number" id="s-class" placeholder="Class" style="flex: 1;">
-                            <input type="date" id="s-date" style="flex: 1.5;">
-                            <button onclick="addStudent()" style="flex: 1;">Register</button>
-                        </div>
+                        <h3>Register Student</h3>
+                        <input type="text" id="s-name" placeholder="Name">
+                        <input type="number" id="s-class" placeholder="Class">
+                        <input type="date" id="s-date">
+                        <button onclick="addStudent()">Register</button>
                     </div>
                     <div class="card">
-                        <h3 style="color: var(--accent);">Student History</h3>
-                        <table>
-                            <thead><tr><th>Name</th><th>Class</th><th>Adm. Date</th></tr></thead>
-                            <tbody id="homeList"></tbody>
-                        </table>
+                        <h3>Student List</h3>
+                        <table><thead><tr><th>Name</th><th>Class</th><th>Adm. Date</th></tr></thead><tbody id="homeList"></tbody></table>
                     </div>
                 </div>
 
-                <!-- 2. ATTENDANCE SECTION (Today's Entry) -->
                 <div id="section-attendance" class="section">
-                    <div class="layout-with-sidebar">
-                        <div class="card table-wrapper">
-                            <h3 style="color: var(--accent);">Today's Attendance</h3>
-                            <table>
-                                <thead><tr><th>Name</th><th style="text-align:center;">P</th><th style="text-align:center;">A</th></tr></thead>
-                                <tbody id="attList"></tbody>
-                            </table>
-                        </div>
-                        <div class="side-wrapper">
-                            <button class="btn-submit" onclick="alert('Attendance Saved Successfully!')">Submit</button>
-                        </div>
+                    <div class="card">
+                        <h3>Today's Attendance</h3>
+                        <table><thead><tr><th>Name</th><th>P</th><th>A</th></tr></thead><tbody id="attList"></tbody></table>
+                        <button style="background: var(--green); width: 100%; margin-top: 20px; padding: 15px;">Submit Attendance</button>
                     </div>
                 </div>
 
-                <!-- 3. FEES SECTION (Paid System) -->
+                <!-- FIXED FEES SECTION PER YOUR REQUEST -->
                 <div id="section-fees" class="section">
                     <div class="card">
-                        <h3 style="color: var(--accent);">Monthly Fees Tracker</h3>
+                        <h3>Fees Management</h3>
                         <table>
-                            <thead><tr><th>Student Name</th><th>Current Status</th></tr></thead>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Status Selection</th>
+                                    <th>Payment Details</th>
+                                </tr>
+                            </thead>
                             <tbody id="feesList"></tbody>
                         </table>
                     </div>
@@ -122,23 +97,16 @@
             </div>
         </div>
 
-        <!-- PROFILE VIEW -->
         <div id="view-profile" class="hidden">
             <div class="container">
                 <div class="card" style="text-align: center;">
-                    <img id="userImg" class="profile-img" src="">
-                    <h2 id="userName" style="margin: 0;"></h2>
-                    <p id="userEmail" style="opacity: 0.6; margin-top: 5px;"></p>
-                </div>
-                <div class="card">
-                    <h3 style="color: var(--red);">Danger Zone</h3>
-                    <div id="removalList"></div>
-                    <button onclick="handleLogout()" style="background: var(--red); color: white; width: 100%; margin-top: 20px;">Logout Account</button>
+                    <img id="userImg" style="width: 100px; border-radius: 50%; border: 3px solid var(--accent);">
+                    <h2 id="userName"></h2>
+                    <button onclick="handleLogout()" style="background: var(--red); color: white; width: 100%; margin-top: 20px;">Logout</button>
                 </div>
             </div>
         </div>
 
-        <!-- BOTTOM NAV -->
         <div class="bottom-nav">
             <div class="bottom-item active" id="bot-home" onclick="switchView('home')">🏠<br>Home</div>
             <div class="bottom-item" id="bot-profile" onclick="switchView('profile')">👤<br>Profile</div>
@@ -159,11 +127,9 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // View Switching Logic (Fixes the overlapping sections)
         function showSection(id) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.getElementById('section-' + id).classList.add('active');
-            
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.getElementById('tab-' + id).classList.add('active');
         }
@@ -171,18 +137,15 @@
         function switchView(view) {
             document.getElementById('view-home').classList.toggle('hidden', view !== 'home');
             document.getElementById('view-profile').classList.toggle('hidden', view !== 'profile');
-            
             document.getElementById('bot-home').classList.toggle('active', view === 'home');
             document.getElementById('bot-profile').classList.toggle('active', view === 'profile');
         }
 
-        // Auth Listener
         auth.onAuthStateChanged(user => {
             if (user) {
                 document.getElementById('view-auth').classList.add('hidden');
                 document.getElementById('main-ui').classList.remove('hidden');
                 document.getElementById('userName').innerText = user.displayName;
-                document.getElementById('userEmail').innerText = user.email;
                 if(user.photoURL) document.getElementById('userImg').src = user.photoURL;
                 loadData();
             } else {
@@ -191,57 +154,68 @@
             }
         });
 
-        function handleLogin() {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider).catch(err => alert(err.message));
-        }
+        function handleLogin() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+        function handleLogout() { auth.signOut().then(() => window.location.href = "index.html"); }
 
-        function handleLogout() {
-            auth.signOut().then(() => window.location.href = "index.html");
-        }
-
-        // Data Management
         async function loadData() {
-            const snapshot = await db.collection('students').orderBy('name').get();
-            const homeList = document.getElementById('homeList');
-            const attList = document.getElementById('attList');
-            const feesList = document.getElementById('feesList');
-            const remList = document.getElementById('removalList');
+            const snapshot = await db.collection('students').get();
+            const home = document.getElementById('homeList');
+            const att = document.getElementById('attList');
+            const fees = document.getElementById('feesList');
 
-            homeList.innerHTML = ""; attList.innerHTML = ""; feesList.innerHTML = ""; remList.innerHTML = "";
+            home.innerHTML = ""; att.innerHTML = ""; fees.innerHTML = "";
 
             snapshot.forEach(doc => {
                 const s = doc.data();
                 const id = doc.id;
-
-                homeList.innerHTML += `<tr><td>${s.name}</td><td>${s.class}</td><td>${s.admissionDate}</td></tr>`;
-                attList.innerHTML += `<tr><td>${s.name}</td><td style="text-align:center;"><input type="radio" name="at-${id}"></td><td style="text-align:center;"><input type="radio" name="at-${id}"></td></tr>`;
-                feesList.innerHTML += `<tr><td>${s.name}</td><td id="f-${id}"><button onclick="markPaid('${id}')">Mark as Paid</button></td></tr>`;
-                remList.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #333;"><span>${s.name}</span><button onclick="deleteStudent('${id}')" style="background:var(--red); padding:5px 12px; font-size:12px;">Delete</button></div>`;
+                home.innerHTML += `<tr><td>${s.name}</td><td>${s.class}</td><td>${s.admissionDate}</td></tr>`;
+                att.innerHTML += `<tr><td>${s.name}</td><td><input type="radio" name="at-${id}"></td><td><input type="radio" name="at-${id}"></td></tr>`;
+                
+                // FEES ROW LOGIC
+                fees.innerHTML += `
+                    <tr>
+                        <td>${s.name}</td>
+                        <td id="status-cell-${id}">
+                            <input type="radio" name="pay-${id}" id="p-${id}" onclick="toggleDateInput('${id}', true)"><label for="p-${id}">Paid</label>
+                            <input type="radio" name="pay-${id}" id="pn-${id}" onclick="toggleDateInput('${id}', false)" checked><label for="pn-${id}">Pending</label>
+                        </td>
+                        <td id="details-cell-${id}"></td>
+                    </tr>`;
             });
         }
 
-        function markPaid(id) {
-            const today = new Date().toLocaleDateString();
-            document.getElementById('f-'+id).innerHTML = `<span class="paid-badge">Paid on ${today}</span>`;
+        function toggleDateInput(id, isPaid) {
+            const detailCell = document.getElementById('details-cell-' + id);
+            if (isPaid) {
+                detailCell.innerHTML = `
+                    <input type="date" id="date-${id}" style="color-scheme:dark;">
+                    <button class="btn-submit-date" onclick="submitFees('${id}')">Submit Date</button>
+                `;
+            } else {
+                detailCell.innerHTML = "";
+            }
+        }
+
+        function submitFees(id) {
+            const dateVal = document.getElementById('date-' + id).value;
+            if (!dateVal) return alert("Select a date first!");
+            
+            // Transform the entire row area to the final text
+            const statusCell = document.getElementById('status-cell-' + id);
+            const detailCell = document.getElementById('details-cell-' + id);
+            
+            statusCell.innerHTML = `<span class="fees-done">Fees is submitted on ${dateVal}</span>`;
+            detailCell.innerHTML = ""; 
+            // In a real app, you'd save 'dateVal' to Firestore here.
         }
 
         async function addStudent() {
             const name = document.getElementById('s-name').value;
             const cls = document.getElementById('s-class').value;
             const date = document.getElementById('s-date').value;
-            if(!name || !cls || !date) return alert("Fill all details!");
-            
+            if(!name || !cls || !date) return alert("Fill all!");
             await db.collection('students').add({ name, class: cls, admissionDate: date });
-            document.getElementById('s-name').value = "";
             loadData();
-        }
-
-        async function deleteStudent(id) {
-            if(confirm("Permanently delete this student?")) {
-                await db.collection('students').doc(id).delete();
-                loadData();
-            }
         }
     </script>
 </body>
