@@ -3,16 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuition Hub Dashboard</title>
+    <title>Tuition Hub | Dashboard</title>
     <style>
-        body { background-color: #121212; color: white; font-family: sans-serif; text-align: center; }
-        .container { margin-top: 50px; border: 1px solid #444; padding: 20px; display: inline-block; }
+        /* Your dark theme and styles */
+        body { background-color: #121212; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; margin: 0; }
+        .header { background: #1f1b24; padding: 20px; text-align: center; border-bottom: 2px solid #bb86fc; }
+        .container { max-width: 900px; margin: 30px auto; padding: 20px; }
+        .card { background: #1e1e1e; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); margin-bottom: 25px; }
+        input { background: #2c2c2c; border: 1px solid #444; color: white; padding: 12px; border-radius: 6px; width: 200px; margin-right: 10px; }
+        button { background: #bb86fc; color: #000; border: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #a370f7; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { background: #2c2c2c; color: #bb86fc; padding: 15px; text-align: left; }
+        td { padding: 15px; border-bottom: 1px solid #333; }
+        .status-btn { background: #03dac6; padding: 8px 15px; font-size: 12px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Welcome to Tuition Hub</h1>
-        <p>Your live dashboard is now active.</p>
+
+    <div class="header">
+        <h1>Tuition Hub</h1>
     </div>
+
+    <div class="container">
+        <!-- Student Entry Form -->
+        <div class="card">
+            <h3>Register New Student</h3>
+            <input type="text" id="studentName" placeholder="Enter Name">
+            <input type="text" id="studentClass" placeholder="Enter Class">
+            <button onclick="saveStudent()">Add to Database</button>
+        </div>
+
+        <!-- Student List Table -->
+        <div class="card">
+            <h3>Active Students</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Class</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="listContainer">
+                    <!-- Students will appear here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Logic to talk to your server.js
+        async function loadStudents() {
+            try {
+                const response = await fetch('/api/students');
+                const students = await response.json();
+                const container = document.getElementById('listContainer');
+                container.innerHTML = students.map(s => `
+                    <tr>
+                        <td>${s.name}</td>
+                        <td>${s.class}</td>
+                        <td><button class="status-btn">Mark Attendance</button></td>
+                    </tr>
+                `).join('');
+            } catch (err) { console.error("Error loading students:", err); }
+        }
+
+        async function saveStudent() {
+            const name = document.getElementById('studentName').value;
+            const className = document.getElementById('studentClass').value;
+            
+            if(!name || !className) return alert("Please fill both fields");
+
+            await fetch('/api/students', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, class: className })
+            });
+
+            document.getElementById('studentName').value = '';
+            document.getElementById('studentClass').value = '';
+            loadStudents(); // Refresh list
+        }
+
+        // Run on page load
+        loadStudents();
+    </script>
 </body>
 </html>
