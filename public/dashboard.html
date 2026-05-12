@@ -21,6 +21,11 @@
         .nav-item { color: var(--accent); font-weight: bold; cursor: pointer; padding: 8px 20px; border-radius: 8px; }
         .nav-item.active { background: #332940; color: white; box-shadow: 0 0 10px var(--accent); }
 
+        /* Sub-navigation for Attendance Branches */
+        .sub-nav { display: flex; gap: 15px; margin-bottom: 20px; }
+        .sub-item { color: var(--accent); cursor: pointer; font-size: 14px; padding: 5px 12px; border: 1px solid var(--accent); border-radius: 20px; }
+        .sub-item.active { background: var(--accent); color: #000; }
+
         /* Bottom Navigation */
         .bottom-nav { background: #1f1b24; display: flex; justify-content: space-around; padding: 12px; border-top: 2px solid var(--accent); position: fixed; bottom: 0; width: 100%; z-index: 100; }
         .bottom-item { color: var(--accent); font-weight: bold; cursor: pointer; text-align: center; flex: 1; opacity: 0.6; }
@@ -30,8 +35,8 @@
         .card { background: var(--card); padding: 25px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #333; }
         
         input, button { background: #2c2c2c; border: 1px solid #444; color: white; padding: 10px; border-radius: 6px; margin: 5px; }
-        input[type="radio"] { transform: scale(1.6); cursor: pointer; accent-color: var(--accent); margin-right: 5px; vertical-align: middle; }
-        label { margin-right: 15px; cursor: pointer; }
+        input[type="radio"] { transform: scale(1.8); cursor: pointer; accent-color: var(--accent); margin-right: 5px; vertical-align: middle; }
+        label { cursor: pointer; }
         
         button { background: var(--accent); color: #000; border: none; font-weight: bold; cursor: pointer; }
         .btn-submit-date { background: var(--green); color: #000; padding: 8px 15px; }
@@ -78,14 +83,29 @@
                     </div>
                 </div>
 
-                <!-- ATTENDANCE SECTION -->
+                <!-- ATTENDANCE SECTION (With Today and History Branches) -->
                 <div id="section-attendance" class="section">
-                    <div class="card" style="display: flex; gap: 20px; align-items: flex-start;">
-                        <div style="flex: 3;">
-                            <h3>Today's Attendance</h3>
-                            <table><thead><tr><th>Name</th><th style="text-align:center;">P</th><th style="text-align:center;">A</th></tr></thead><tbody id="attList"></tbody></table>
+                    <div class="sub-nav">
+                        <div class="sub-item active" id="sub-today" onclick="switchAttBranch('today')">Today (<span id="currentDateDisplay"></span>)</div>
+                        <div class="sub-item" id="sub-history" onclick="switchAttBranch('history')">History</div>
+                    </div>
+
+                    <!-- Today Branch -->
+                    <div id="branch-today" class="att-branch">
+                        <div class="card" style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+                            <div style="flex: 3; min-width: 300px;">
+                                <table><thead><tr><th>Name</th><th style="text-align:center;">P</th><th style="text-align:center;">A</th></tr></thead><tbody id="attList"></tbody></table>
+                            </div>
+                            <button style="flex: 1; background: var(--green); padding: 30px; font-size: 20px; border-radius: 12px; min-width: 200px;">Submit</button>
                         </div>
-                        <button style="flex: 1; background: var(--green); padding: 30px; font-size: 20px; border-radius: 12px; margin-top: 45px;">Submit</button>
+                    </div>
+
+                    <!-- History Branch -->
+                    <div id="branch-history" class="att-branch hidden">
+                        <div class="card">
+                            <h3>Attendance History</h3>
+                            <p style="opacity: 0.6;">Past attendance logs will appear here.</p>
+                        </div>
                     </div>
                 </div>
 
@@ -93,15 +113,7 @@
                 <div id="section-fees" class="section">
                     <div class="card">
                         <h3>Monthly Fees Tracker</h3>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Student Name</th>
-                                    <th>Status Selection</th>
-                                </tr>
-                            </thead>
-                            <tbody id="feesList"></tbody>
-                        </table>
+                        <table><thead><tr><th>Student Name</th><th>Status Selection</th></tr></thead><tbody id="feesList"></tbody></table>
                     </div>
                 </div>
             </div>
@@ -143,11 +155,21 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
+        // Sets current date on the "Today" branch
+        document.getElementById('currentDateDisplay').innerText = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
+
         function showSection(id) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.getElementById('section-' + id).classList.add('active');
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.getElementById('tab-' + id).classList.add('active');
+        }
+
+        function switchAttBranch(branch) {
+            document.getElementById('branch-today').classList.toggle('hidden', branch !== 'today');
+            document.getElementById('branch-history').classList.toggle('hidden', branch !== 'history');
+            document.getElementById('sub-today').classList.toggle('active', branch === 'today');
+            document.getElementById('sub-history').classList.toggle('active', branch === 'history');
         }
 
         function switchView(view) {
@@ -216,7 +238,6 @@
         function submitFees(id) {
             const dateVal = document.getElementById('date-' + id).value;
             if (!dateVal) return alert("Select payment date!");
-            
             const container = document.getElementById('fees-container-' + id);
             const formattedDate = dateVal.split('-').reverse().join('-');
             container.innerHTML = `<span class="fees-done">Fees is submitted on ${formattedDate}</span>`;
