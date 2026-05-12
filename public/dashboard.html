@@ -4,20 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tuition Hub | Management</title>
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
     <style>
         :root { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --accent: #bb86fc; --green: #03dac6; --red: #cf6679; }
-        body { background-color: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 80px; }
+        body { background-color: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 80px; overflow-x: hidden; }
+        
         .hidden { display: none !important; }
         .section { display: none; }
         .section.active { display: block; }
 
+        /* Top Navigation */
         .navbar { background: #1f1b24; display: flex; justify-content: space-around; padding: 15px; border-bottom: 2px solid var(--accent); position: sticky; top: 0; z-index: 100; }
         .nav-item { color: var(--accent); font-weight: bold; cursor: pointer; padding: 8px 20px; border-radius: 8px; }
         .nav-item.active { background: #332940; color: white; box-shadow: 0 0 10px var(--accent); }
 
+        /* Bottom Navigation */
         .bottom-nav { background: #1f1b24; display: flex; justify-content: space-around; padding: 12px; border-top: 2px solid var(--accent); position: fixed; bottom: 0; width: 100%; z-index: 100; }
         .bottom-item { color: var(--accent); font-weight: bold; cursor: pointer; text-align: center; flex: 1; opacity: 0.6; }
         .bottom-item.active { color: white; opacity: 1; }
@@ -30,16 +34,18 @@
         label { margin-right: 15px; cursor: pointer; }
         
         button { background: var(--accent); color: #000; border: none; font-weight: bold; cursor: pointer; }
-        .btn-submit-date { background: var(--green); color: #000; padding: 8px 15px; margin-left: 10px; }
+        .btn-submit-date { background: var(--green); color: #000; padding: 8px 15px; }
         
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 15px; text-align: left; border-bottom: 1px solid #333; }
         th { color: var(--accent); font-size: 13px; text-transform: uppercase; }
         .fees-done { color: var(--green); font-weight: bold; font-style: italic; }
+        .profile-img { width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--accent); }
     </style>
 </head>
 <body>
 
+    <!-- AUTH GATE -->
     <div id="view-auth" style="display: flex; justify-content: center; align-items: center; height: 100vh;">
         <div class="card" style="text-align: center; width: 320px;">
             <h1 style="color: var(--accent);">Tuition Hub</h1>
@@ -47,6 +53,7 @@
         </div>
     </div>
 
+    <!-- MAIN UI -->
     <div id="main-ui" class="hidden">
         <div id="view-home">
             <div class="navbar">
@@ -56,6 +63,7 @@
             </div>
 
             <div class="container">
+                <!-- STUDENTS SECTION -->
                 <div id="section-students" class="section active">
                     <div class="card">
                         <h3>Register Student</h3>
@@ -65,29 +73,31 @@
                         <button onclick="addStudent()">Register</button>
                     </div>
                     <div class="card">
-                        <h3>Student List</h3>
+                        <h3>Student History</h3>
                         <table><thead><tr><th>Name</th><th>Class</th><th>Adm. Date</th></tr></thead><tbody id="homeList"></tbody></table>
                     </div>
                 </div>
 
+                <!-- ATTENDANCE SECTION -->
                 <div id="section-attendance" class="section">
-                    <div class="card">
-                        <h3>Today's Attendance</h3>
-                        <table><thead><tr><th>Name</th><th>P</th><th>A</th></tr></thead><tbody id="attList"></tbody></table>
-                        <button style="background: var(--green); width: 100%; margin-top: 20px; padding: 15px;">Submit Attendance</button>
+                    <div class="card" style="display: flex; gap: 20px; align-items: flex-start;">
+                        <div style="flex: 3;">
+                            <h3>Today's Attendance</h3>
+                            <table><thead><tr><th>Name</th><th style="text-align:center;">P</th><th style="text-align:center;">A</th></tr></thead><tbody id="attList"></tbody></table>
+                        </div>
+                        <button style="flex: 1; background: var(--green); padding: 30px; font-size: 20px; border-radius: 12px; margin-top: 45px;">Submit</button>
                     </div>
                 </div>
 
-                <!-- FIXED FEES SECTION PER YOUR REQUEST -->
+                <!-- FEES SECTION -->
                 <div id="section-fees" class="section">
                     <div class="card">
-                        <h3>Fees Management</h3>
+                        <h3>Monthly Fees Tracker</h3>
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Name</th>
+                                    <th>Student Name</th>
                                     <th>Status Selection</th>
-                                    <th>Payment Details</th>
                                 </tr>
                             </thead>
                             <tbody id="feesList"></tbody>
@@ -97,11 +107,17 @@
             </div>
         </div>
 
+        <!-- PROFILE SECTION -->
         <div id="view-profile" class="hidden">
             <div class="container">
                 <div class="card" style="text-align: center;">
-                    <img id="userImg" style="width: 100px; border-radius: 50%; border: 3px solid var(--accent);">
+                    <img id="userImg" class="profile-img">
                     <h2 id="userName"></h2>
+                    <p id="userEmail" style="opacity: 0.6;"></p>
+                </div>
+                <div class="card">
+                    <h3 style="color: var(--red);">Remove Students</h3>
+                    <div id="removalList"></div>
                     <button onclick="handleLogout()" style="background: var(--red); color: white; width: 100%; margin-top: 20px;">Logout</button>
                 </div>
             </div>
@@ -146,6 +162,7 @@
                 document.getElementById('view-auth').classList.add('hidden');
                 document.getElementById('main-ui').classList.remove('hidden');
                 document.getElementById('userName').innerText = user.displayName;
+                document.getElementById('userEmail').innerText = user.email;
                 if(user.photoURL) document.getElementById('userImg').src = user.photoURL;
                 loadData();
             } else {
@@ -158,64 +175,67 @@
         function handleLogout() { auth.signOut().then(() => window.location.href = "index.html"); }
 
         async function loadData() {
-            const snapshot = await db.collection('students').get();
+            const snapshot = await db.collection('students').orderBy('name').get();
             const home = document.getElementById('homeList');
             const att = document.getElementById('attList');
             const fees = document.getElementById('feesList');
+            const rem = document.getElementById('removalList');
 
-            home.innerHTML = ""; att.innerHTML = ""; fees.innerHTML = "";
+            home.innerHTML = ""; att.innerHTML = ""; fees.innerHTML = ""; rem.innerHTML = "";
 
             snapshot.forEach(doc => {
                 const s = doc.data();
                 const id = doc.id;
-                home.innerHTML += `<tr><td>${s.name}</td><td>${s.class}</td><td>${s.admissionDate}</td></tr>`;
-                att.innerHTML += `<tr><td>${s.name}</td><td><input type="radio" name="at-${id}"></td><td><input type="radio" name="at-${id}"></td></tr>`;
                 
-                // FEES ROW LOGIC
+                home.innerHTML += `<tr><td>${s.name}</td><td>${s.class}</td><td>${s.admissionDate}</td></tr>`;
+                att.innerHTML += `<tr><td>${s.name}</td><td style="text-align:center;"><input type="radio" name="at-${id}"></td><td style="text-align:center;"><input type="radio" name="at-${id}"></td></tr>`;
+                
                 fees.innerHTML += `
                     <tr>
                         <td>${s.name}</td>
-                        <td id="status-cell-${id}">
-                            <input type="radio" name="pay-${id}" id="p-${id}" onclick="toggleDateInput('${id}', true)"><label for="p-${id}">Paid</label>
-                            <input type="radio" name="pay-${id}" id="pn-${id}" onclick="toggleDateInput('${id}', false)" checked><label for="pn-${id}">Pending</label>
+                        <td id="fees-container-${id}">
+                            <input type="radio" name="pay-${id}" id="p-${id}" onclick="toggleDateInput('${id}')">
+                            <label for="p-${id}">Paid</label>
+                            <input type="radio" name="pay-${id}" id="pn-${id}" checked>
+                            <label for="pn-${id}">Pending</label>
                         </td>
-                        <td id="details-cell-${id}"></td>
                     </tr>`;
+                
+                rem.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #333;"><span>${s.name}</span><button onclick="deleteStudent('${id}')" style="background:var(--red); padding:5px 12px; font-size:12px;">Delete</button></div>`;
             });
         }
 
-        function toggleDateInput(id, isPaid) {
-            const detailCell = document.getElementById('details-cell-' + id);
-            if (isPaid) {
-                detailCell.innerHTML = `
-                    <input type="date" id="date-${id}" style="color-scheme:dark;">
-                    <button class="btn-submit-date" onclick="submitFees('${id}')">Submit Date</button>
-                `;
-            } else {
-                detailCell.innerHTML = "";
-            }
+        function toggleDateInput(id) {
+            const container = document.getElementById('fees-container-' + id);
+            container.innerHTML = `
+                <input type="date" id="date-${id}" style="color-scheme:dark; margin-right:10px;">
+                <button class="btn-submit-date" onclick="submitFees('${id}')">Submit Date</button>
+            `;
         }
 
         function submitFees(id) {
             const dateVal = document.getElementById('date-' + id).value;
-            if (!dateVal) return alert("Select a date first!");
+            if (!dateVal) return alert("Select payment date!");
             
-            // Transform the entire row area to the final text
-            const statusCell = document.getElementById('status-cell-' + id);
-            const detailCell = document.getElementById('details-cell-' + id);
-            
-            statusCell.innerHTML = `<span class="fees-done">Fees is submitted on ${dateVal}</span>`;
-            detailCell.innerHTML = ""; 
-            // In a real app, you'd save 'dateVal' to Firestore here.
+            const container = document.getElementById('fees-container-' + id);
+            const formattedDate = dateVal.split('-').reverse().join('-');
+            container.innerHTML = `<span class="fees-done">Fees is submitted on ${formattedDate}</span>`;
         }
 
         async function addStudent() {
             const name = document.getElementById('s-name').value;
             const cls = document.getElementById('s-class').value;
             const date = document.getElementById('s-date').value;
-            if(!name || !cls || !date) return alert("Fill all!");
+            if(!name || !cls || !date) return alert("Fill details!");
             await db.collection('students').add({ name, class: cls, admissionDate: date });
             loadData();
+        }
+
+        async function deleteStudent(id) {
+            if(confirm("Delete student?")) {
+                await db.collection('students').doc(id).delete();
+                loadData();
+            }
         }
     </script>
 </body>
