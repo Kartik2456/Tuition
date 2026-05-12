@@ -1,40 +1,52 @@
-<script type="module">
-  // These imports come directly from your SDK image
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tuition Hub | Login</title>
+    <style>
+        body { background: #121212; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-card { background: #1e1e1e; padding: 40px; border-radius: 15px; border: 1px solid #bb86fc; text-align: center; }
+        button { background: white; color: black; border: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
 
-  // Data copied exactly from image_9109f7.png
-  const firebaseConfig = {
-    apiKey: "AIzaSyDH9vfqKh16tka_14deuwWzYDQR-2TvR_U",
-    authDomain: "tuituionhub.firebaseapp.com",
-    projectId: "tuituionhub",
-    storageBucket: "tuituionhub.firebasestorage.app",
-    messagingSenderId: "373410141090",
-    appId: "1:373410141090:web:45144c02501738c31798fb",
-    measurementId: "G-XPS2L1NZ2V"
-  };
+    <div class="login-card">
+        <h1>Tuition Hub</h1>
+        <p>Sign in to manage your students.</p>
+        <!-- This ID must match the one in the script -->
+        <button id="login-btn">Sign in with Google</button>
+    </div>
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const provider = new GoogleAuthProvider();
+    <script type="module">
+        // Data copied exactly from image_9109f7.png
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-  // The Login Button Logic
-  document.getElementById('login-btn').onclick = () => {
-    signInWithPopup(auth, provider)
-      .then((result) => {
-        // Once logged in, go to your dashboard file
-        window.location.href = "dashboard.html";
-      })
-      .catch((error) => {
-        alert("Login failed: " + error.message);
-      });
-  };
+        const firebaseConfig = {
+            apiKey: "AIzaSyDH9vfqKh16tka_14deuwWzYDQR-2TvR_U",
+            authDomain: "tuituionhub.firebaseapp.com",
+            projectId: "tuituionhub",
+            storageBucket: "tuituionhub.firebasestorage.app",
+            messagingSenderId: "373410141090",
+            appId: "1:373410141090:web:45144c02501738c31798fb",
+            measurementId: "G-XPS2L1NZ2V"
+        };
 
-  // Check if already logged in
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      window.location.href = "dashboard.html";
-    }
-  });
-</script>
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        document.getElementById('login-btn').onclick = () => {
+            signInWithPopup(auth, provider)
+                .then(() => { window.location.href = "dashboard.html"; })
+                .catch(err => alert("Error: " + err.message));
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) window.location.href = "dashboard.html";
+        });
+    </script>
+</body>
+</html>
