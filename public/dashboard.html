@@ -21,7 +21,7 @@
         .nav-item { color: var(--accent); font-weight: bold; cursor: pointer; padding: 8px 20px; border-radius: 8px; }
         .nav-item.active { background: #332940; color: white; box-shadow: 0 0 10px var(--accent); }
 
-        /* Sub-navigation for Attendance Branches */
+        /* Sub-navigation for Attendance */
         .sub-nav { display: flex; gap: 15px; margin-bottom: 20px; }
         .sub-item { color: var(--accent); cursor: pointer; font-size: 14px; padding: 5px 12px; border: 1px solid var(--accent); border-radius: 20px; }
         .sub-item.active { background: var(--accent); color: #000; }
@@ -83,28 +83,26 @@
                     </div>
                 </div>
 
-                <!-- ATTENDANCE SECTION (With Today and History Branches) -->
+                <!-- ATTENDANCE SECTION -->
                 <div id="section-attendance" class="section">
                     <div class="sub-nav">
                         <div class="sub-item active" id="sub-today" onclick="switchAttBranch('today')">Today (<span id="currentDateDisplay"></span>)</div>
                         <div class="sub-item" id="sub-history" onclick="switchAttBranch('history')">History</div>
                     </div>
 
-                    <!-- Today Branch -->
                     <div id="branch-today" class="att-branch">
                         <div class="card" style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
                             <div style="flex: 3; min-width: 300px;">
                                 <table><thead><tr><th>Name</th><th style="text-align:center;">P</th><th style="text-align:center;">A</th></tr></thead><tbody id="attList"></tbody></table>
                             </div>
-                            <button style="flex: 1; background: var(--green); padding: 30px; font-size: 20px; border-radius: 12px; min-width: 200px;">Submit</button>
+                            <button onclick="submitAttendance()" style="flex: 1; background: var(--green); padding: 30px; font-size: 20px; border-radius: 12px; min-width: 200px;">Submit</button>
                         </div>
                     </div>
 
-                    <!-- History Branch -->
                     <div id="branch-history" class="att-branch hidden">
                         <div class="card">
                             <h3>Attendance History</h3>
-                            <p style="opacity: 0.6;">Past attendance logs will appear here.</p>
+                            <div id="historyLogs">No logs found yet.</div>
                         </div>
                     </div>
                 </div>
@@ -155,7 +153,6 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // Sets current date on the "Today" branch
         document.getElementById('currentDateDisplay').innerText = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
 
         function showSection(id) {
@@ -208,31 +205,16 @@
             snapshot.forEach(doc => {
                 const s = doc.data();
                 const id = doc.id;
-                
                 home.innerHTML += `<tr><td>${s.name}</td><td>${s.class}</td><td>${s.admissionDate}</td></tr>`;
                 att.innerHTML += `<tr><td>${s.name}</td><td style="text-align:center;"><input type="radio" name="at-${id}"></td><td style="text-align:center;"><input type="radio" name="at-${id}"></td></tr>`;
-                
-                fees.innerHTML += `
-                    <tr>
-                        <td>${s.name}</td>
-                        <td id="fees-container-${id}">
-                            <input type="radio" name="pay-${id}" id="p-${id}" onclick="toggleDateInput('${id}')">
-                            <label for="p-${id}">Paid</label>
-                            <input type="radio" name="pay-${id}" id="pn-${id}" checked>
-                            <label for="pn-${id}">Pending</label>
-                        </td>
-                    </tr>`;
-                
+                fees.innerHTML += `<tr><td>${s.name}</td><td id="fees-container-${id}"><input type="radio" name="pay-${id}" id="p-${id}" onclick="toggleDateInput('${id}')"><label for="p-${id}">Paid</label><input type="radio" name="pay-${id}" id="pn-${id}" checked><label for="pn-${id}">Pending</label></td></tr>`;
                 rem.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #333;"><span>${s.name}</span><button onclick="deleteStudent('${id}')" style="background:var(--red); padding:5px 12px; font-size:12px;">Delete</button></div>`;
             });
         }
 
         function toggleDateInput(id) {
             const container = document.getElementById('fees-container-' + id);
-            container.innerHTML = `
-                <input type="date" id="date-${id}" style="color-scheme:dark; margin-right:10px;">
-                <button class="btn-submit-date" onclick="submitFees('${id}')">Submit Date</button>
-            `;
+            container.innerHTML = `<input type="date" id="date-${id}" style="color-scheme:dark; margin-right:10px;"><button class="btn-submit-date" onclick="submitFees('${id}')">Submit Date</button>`;
         }
 
         function submitFees(id) {
@@ -243,11 +225,26 @@
             container.innerHTML = `<span class="fees-done">Fees is submitted on ${formattedDate}</span>`;
         }
 
+        async function submitAttendance() {
+            const today = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
+            const records = [];
+            document.querySelectorAll('#attList tr').forEach(row => {
+                const name = row.cells[0].innerText;
+                const radios = row.querySelectorAll('input[type="radio"]');
+                let status = "Not Marked";
+                if (radios[0].checked) status = "Present";
+                if (radios[1].checked) status = "Absent";
+                records.push({ name, status });
+            });
+            await db.collection('attendance').doc(today).set({ date: today, records });
+            alert("Attendance saved!");
+        }
+
         async function addStudent() {
             const name = document.getElementById('s-name').value;
             const cls = document.getElementById('s-class').value;
             const date = document.getElementById('s-date').value;
-            if(!name || !cls || !date) return alert("Fill details!");
+            if(!name || !cls || !date) return alert("Fill all details!");
             await db.collection('students').add({ name, class: cls, admissionDate: date });
             loadData();
         }
