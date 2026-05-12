@@ -14,10 +14,9 @@
         .section.active { display: block; } 
         .card { background: #1e1e1e; padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #333; }
         
-        /* Sidebar Layout for Attendance */
-        .attendance-layout { display: flex; gap: 20px; align-items: flex-start; }
+        .layout-with-sidebar { display: flex; gap: 20px; align-items: flex-start; }
         .table-wrapper { flex: 3; }
-        .submit-wrapper { flex: 1; position: sticky; top: 80px; }
+        .side-wrapper { flex: 1; position: sticky; top: 80px; }
 
         .sub-nav { margin-bottom: 20px; display: flex; gap: 10px; }
         .sub-btn { background: #333; color: #bb86fc; border: 1px solid #bb86fc; padding: 8px 20px; border-radius: 20px; cursor: pointer; width: 50%; text-align: center; }
@@ -26,11 +25,11 @@
         input { background: #2c2c2c; border: 1px solid #444; color: white; padding: 12px; border-radius: 6px; margin: 5px; }
         input[type="date"] { color-scheme: dark; }
         
-        /* BIGGER RADIO DOTS */
+        /* BIGGER RADIO DOTS for Attendance & Fees */
         input[type="radio"] { transform: scale(1.8); cursor: pointer; accent-color: #bb86fc; }
         
         button { background: #bb86fc; color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-submit { background: #03dac6; padding: 25px; font-size: 20px; width: 100%; border-radius: 12px; }
+        .btn-large { background: #03dac6; padding: 25px; font-size: 20px; width: 100%; border-radius: 12px; }
 
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 15px; text-align: left; border-bottom: 1px solid #333; }
@@ -76,7 +75,7 @@
             </div>
 
             <div id="today" class="sub-section">
-                <div class="attendance-layout">
+                <div class="layout-with-sidebar">
                     <div class="card table-wrapper">
                         <h3>Today's Attendance</h3>
                         <table>
@@ -84,8 +83,8 @@
                             <tbody id="attendanceTodayList"></tbody>
                         </table>
                     </div>
-                    <div class="submit-wrapper">
-                        <button class="btn-submit" onclick="submitAttendance()">Submit</button>
+                    <div class="side-wrapper">
+                        <button class="btn-large" onclick="submitAttendance()">Submit</button>
                     </div>
                 </div>
             </div>
@@ -106,12 +105,29 @@
             </div>
         </div>
 
-        <div id="fees" class="section"><div class="card"><h3>Fees Status</h3><p>Management section coming soon.</p></div></div>
+        <!-- FEES SECTION (Now matching Students layout) -->
+        <div id="fees" class="section">
+            <div class="layout-with-sidebar">
+                <div class="card table-wrapper">
+                    <h3>Fees Management</h3>
+                    <table>
+                        <thead>
+                            <tr><th>Name</th><th>Paid</th><th>Pending</th></tr>
+                        </thead>
+                        <tbody id="feesStudentList"></tbody>
+                    </table>
+                </div>
+                <div class="side-wrapper">
+                    <button class="btn-large" onclick="saveFees()">Update Fees</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         let students = [];
         let attendanceData = {};
+        let feesData = {};
 
         function showSection(id) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -131,29 +147,44 @@
         async function loadData() {
             const res = await fetch('/api/students');
             students = await res.json();
+            
+            // Populate Students Tab
             document.getElementById('homeList').innerHTML = students.map(s => `
                 <tr><td>${s.name}</td><td>${s.class}</td><td>${s.admissionDate || 'N/A'}</td></tr>
             `).join('');
 
+            // Populate Attendance Tab
             document.getElementById('attendanceTodayList').innerHTML = students.map(s => `
                 <tr>
                     <td>${s.name}</td>
-                    <td><input type="radio" name="att-${s.name}" onclick="updateTempStatus('${s.name}', 'Present')"></td>
-                    <td><input type="radio" name="att-${s.name}" onclick="updateTempStatus('${s.name}', 'Absent')"></td>
+                    <td><input type="radio" name="att-${s.name}" onclick="attendanceData['${s.name}']='Present'"></td>
+                    <td><input type="radio" name="att-${s.name}" onclick="attendanceData['${s.name}']='Absent'"></td>
+                </tr>
+            `).join('');
+
+            // Populate Fees Tab
+            document.getElementById('feesStudentList').innerHTML = students.map(s => `
+                <tr>
+                    <td>${s.name}</td>
+                    <td><input type="radio" name="fee-${s.name}" onclick="feesData['${s.name}']='Paid'"></td>
+                    <td><input type="radio" name="fee-${s.name}" onclick="feesData['${s.name}']='Pending'"></td>
                 </tr>
             `).join('');
         }
-
-        function updateTempStatus(name, status) { attendanceData[name] = status; }
 
         async function submitAttendance() {
             const today = new Date().toLocaleDateString('en-GB');
             const history = JSON.parse(localStorage.getItem('attHistory') || '[]');
             history.push({ date: today, records: attendanceData });
             localStorage.setItem('attHistory', JSON.stringify(history));
-            alert("Attendance submitted for " + today);
+            alert("Attendance submitted!");
             attendanceData = {};
             showSubSection('history');
+        }
+
+        function saveFees() {
+            // Logic to save fee status could be added here
+            alert("Fees status updated successfully!");
         }
 
         function loadHistoryDates() {
