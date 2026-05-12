@@ -9,7 +9,7 @@
         .navbar { background: #1f1b24; display: flex; justify-content: space-around; padding: 15px; border-bottom: 2px solid #bb86fc; position: sticky; top: 0; z-index: 100; }
         .nav-item { color: #bb86fc; text-decoration: none; font-weight: bold; cursor: pointer; padding: 5px 15px; border-radius: 5px; }
         .nav-item.active { background: #332940; color: white; }
-        .container { max-width: 1000px; margin: 20px auto; padding: 20px; }
+        .container { max-width: 1100px; margin: 20px auto; padding: 20px; }
         .section { display: none; } 
         .section.active { display: block; } 
         .card { background: #1e1e1e; padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #333; }
@@ -22,19 +22,20 @@
         .sub-btn { background: #333; color: #bb86fc; border: 1px solid #bb86fc; padding: 8px 20px; border-radius: 20px; cursor: pointer; width: 50%; text-align: center; }
         .sub-btn.active { background: #bb86fc; color: black; }
         
-        input { background: #2c2c2c; border: 1px solid #444; color: white; padding: 12px; border-radius: 6px; margin: 5px; }
+        input { background: #2c2c2c; border: 1px solid #444; color: white; padding: 10px; border-radius: 6px; margin: 2px; }
         input[type="date"] { color-scheme: dark; }
-        
-        /* BIGGER RADIO DOTS for Attendance & Fees */
-        input[type="radio"] { transform: scale(1.8); cursor: pointer; accent-color: #bb86fc; }
+        input[type="radio"] { transform: scale(1.6); cursor: pointer; accent-color: #bb86fc; margin-right: 10px; }
         
         button { background: #bb86fc; color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         .btn-large { background: #03dac6; padding: 25px; font-size: 20px; width: 100%; border-radius: 12px; }
+        .btn-small { padding: 5px 10px; font-size: 12px; background: #03dac6; margin-left: 5px; }
 
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #333; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
         th { color: #bb86fc; }
-        .history-date { color: #bb86fc; cursor: pointer; text-decoration: underline; display: block; margin: 10px 0; font-size: 18px; }
+        
+        .date-input-area { display: none; align-items: center; margin-top: 5px; }
+        .submitted-text { color: #03dac6; font-weight: bold; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -59,9 +60,7 @@
             <div class="card">
                 <h3>Student List</h3>
                 <table>
-                    <thead>
-                        <tr><th>Name</th><th>Class</th><th>Date of Admission</th></tr>
-                    </thead>
+                    <thead><tr><th>Name</th><th>Class</th><th>Date of Admission</th></tr></thead>
                     <tbody id="homeList"></tbody>
                 </table>
             </div>
@@ -73,7 +72,6 @@
                 <div class="sub-btn active" id="btn-today" onclick="showSubSection('today')">Today</div>
                 <div class="sub-btn" id="btn-history" onclick="showSubSection('history')">History</div>
             </div>
-
             <div id="today" class="sub-section">
                 <div class="layout-with-sidebar">
                     <div class="card table-wrapper">
@@ -83,51 +81,34 @@
                             <tbody id="attendanceTodayList"></tbody>
                         </table>
                     </div>
-                    <div class="side-wrapper">
-                        <button class="btn-large" onclick="submitAttendance()">Submit</button>
-                    </div>
+                    <div class="side-wrapper"><button class="btn-large" onclick="submitAttendance()">Submit</button></div>
                 </div>
             </div>
-
             <div id="history" class="sub-section" style="display:none;">
-                <div class="card">
-                    <h3>Attendance History</h3>
-                    <div id="historyDates">No History Yet</div>
-                    <div id="historyDetail" style="display:none;">
-                        <button onclick="backToDates()" style="background:#444; color:white; margin-bottom:10px;">← Back</button>
-                        <h4 id="viewingDate"></h4>
-                        <table id="historyDetailTable">
-                            <thead><tr><th>Name</th><th>Status</th></tr></thead>
-                            <tbody id="historyDetailBody"></tbody>
-                        </table>
-                    </div>
-                </div>
+                <div class="card"><div id="historyDates">No History Yet</div></div>
             </div>
         </div>
 
-        <!-- FEES SECTION (Now matching Students layout) -->
+        <!-- FEES SECTION -->
         <div id="fees" class="section">
-            <div class="layout-with-sidebar">
-                <div class="card table-wrapper">
-                    <h3>Fees Management</h3>
-                    <table>
-                        <thead>
-                            <tr><th>Name</th><th>Paid</th><th>Pending</th></tr>
-                        </thead>
-                        <tbody id="feesStudentList"></tbody>
-                    </table>
-                </div>
-                <div class="side-wrapper">
-                    <button class="btn-large" onclick="saveFees()">Update Fees</button>
-                </div>
+            <div class="card">
+                <h3>Fees Management</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Status Selection</th>
+                            <th>Payment Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="feesStudentList"></tbody>
+                </table>
             </div>
         </div>
     </div>
 
     <script>
         let students = [];
-        let attendanceData = {};
-        let feesData = {};
 
         function showSection(id) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -141,72 +122,65 @@
             document.getElementById('history').style.display = subId === 'history' ? 'block' : 'none';
             document.getElementById('btn-today').classList.toggle('active', subId === 'today');
             document.getElementById('btn-history').classList.toggle('active', subId === 'history');
-            if(subId === 'history') loadHistoryDates();
         }
 
         async function loadData() {
             const res = await fetch('/api/students');
             students = await res.json();
             
-            // Populate Students Tab
             document.getElementById('homeList').innerHTML = students.map(s => `
                 <tr><td>${s.name}</td><td>${s.class}</td><td>${s.admissionDate || 'N/A'}</td></tr>
             `).join('');
 
-            // Populate Attendance Tab
             document.getElementById('attendanceTodayList').innerHTML = students.map(s => `
                 <tr>
                     <td>${s.name}</td>
-                    <td><input type="radio" name="att-${s.name}" onclick="attendanceData['${s.name}']='Present'"></td>
-                    <td><input type="radio" name="att-${s.name}" onclick="attendanceData['${s.name}']='Absent'"></td>
+                    <td><input type="radio" name="att-${s.name}"></td>
+                    <td><input type="radio" name="att-${s.name}"></td>
                 </tr>
             `).join('');
 
-            // Populate Fees Tab
-            document.getElementById('feesStudentList').innerHTML = students.map(s => `
+            // FEES TAB LOGIC
+            document.getElementById('feesStudentList').innerHTML = students.map((s, index) => `
                 <tr>
                     <td>${s.name}</td>
-                    <td><input type="radio" name="fee-${s.name}" onclick="feesData['${s.name}']='Paid'"></td>
-                    <td><input type="radio" name="fee-${s.name}" onclick="feesData['${s.name}']='Pending'"></td>
+                    <td>
+                        <label><input type="radio" name="fee-${index}" onclick="handleFeeClick(${index}, 'Paid')"> Paid</label>
+                        <label style="margin-left:15px;"><input type="radio" name="fee-${index}" onclick="handleFeeClick(${index}, 'Pending')"> Pending</label>
+                    </td>
+                    <td id="fee-action-${index}">
+                        <div id="date-box-${index}" class="date-input-area">
+                            <input type="date" id="input-date-${index}">
+                            <button class="btn-small" onclick="lockFeeDate(${index})">Submit Date</button>
+                        </div>
+                    </td>
                 </tr>
             `).join('');
         }
 
-        async function submitAttendance() {
-            const today = new Date().toLocaleDateString('en-GB');
-            const history = JSON.parse(localStorage.getItem('attHistory') || '[]');
-            history.push({ date: today, records: attendanceData });
-            localStorage.setItem('attHistory', JSON.stringify(history));
-            alert("Attendance submitted!");
-            attendanceData = {};
-            showSubSection('history');
+        function handleFeeClick(index, status) {
+            const dateBox = document.getElementById(`date-box-${index}`);
+            if (status === 'Paid') {
+                dateBox.style.display = 'flex';
+            } else {
+                dateBox.style.display = 'none';
+            }
         }
 
-        function saveFees() {
-            // Logic to save fee status could be added here
-            alert("Fees status updated successfully!");
-        }
-
-        function loadHistoryDates() {
-            const history = JSON.parse(localStorage.getItem('attHistory') || '[]');
-            const container = document.getElementById('historyDates');
-            if(history.length === 0) { container.innerHTML = "No History Yet"; return; }
-            document.getElementById('historyDetail').style.display = "none";
-            container.style.display = "block";
-            container.innerHTML = history.map((h, i) => `<div class="history-date" onclick="viewHistoryDetail(${i})">${h.date}</div>`).join('');
-        }
-
-        function viewHistoryDetail(i) {
-            const history = JSON.parse(localStorage.getItem('attHistory'))[i];
-            document.getElementById('historyDates').style.display = "none";
-            document.getElementById('historyDetail').style.display = "block";
-            document.getElementById('viewingDate').innerText = "Date: " + history.date;
-            document.getElementById('historyDetailBody').innerHTML = Object.entries(history.records).map(([n, s]) => `<tr><td>${n}</td><td>${s}</td></tr>`).join('');
-        }
-
-        function backToDates() {
-            document.getElementById('historyDetail').style.display = "none";
-            document.getElementById('historyDates').style.display = "block";
+        function lockFeeDate(index) {
+            const dateInput = document.getElementById(`input-date-${index}`).value;
+            if (!dateInput) return alert("Please select a date first");
+            
+            const displayArea = document.getElementById(`fee-action-${index}`);
+            // Format date to DD-MM-YYYY
+            const d = new Date(dateInput);
+            const formattedDate = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+            
+            displayArea.innerHTML = `<span class="submitted-text">Submitted on ${formattedDate}</span>`;
+            
+            // Disable the radio buttons for this student to lock status
+            const radios = document.getElementsByName(`fee-${index}`);
+            radios.forEach(r => r.disabled = true);
         }
 
         async function addStudent() {
