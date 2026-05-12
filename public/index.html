@@ -14,22 +14,23 @@
         .section.active { display: block; } 
         .card { background: #1e1e1e; padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #333; }
         
-        /* Flex layout to put button beside table */
         .attendance-layout { display: flex; gap: 20px; align-items: flex-start; }
         .table-wrapper { flex: 3; }
         .submit-wrapper { flex: 1; position: sticky; top: 80px; }
 
         .sub-nav { margin-bottom: 20px; display: flex; gap: 10px; }
-        .sub-btn { background: #333; color: #bb86fc; border: 1px solid #bb86fc; padding: 8px 20px; border-radius: 20px; cursor: pointer; }
+        .sub-btn { background: #333; color: #bb86fc; border: 1px solid #bb86fc; padding: 8px 20px; border-radius: 20px; cursor: pointer; width: 50%; text-align: center; }
         .sub-btn.active { background: #bb86fc; color: black; }
         
         input[type="text"], input[type="number"], input[type="date"] { background: #2c2c2c; border: 1px solid #444; color: white; padding: 12px; border-radius: 6px; margin: 5px; }
         
-        /* BIGGER DOTS (Radio Buttons) */
+        /* BIGGER DOTS */
         input[type="radio"] { transform: scale(1.8); cursor: pointer; accent-color: #bb86fc; }
         
-        button { background: #bb86fc; color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; }
-        .btn-submit { background: #03dac6; padding: 20px; font-size: 16px; }
+        button { background: #bb86fc; color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        
+        /* UPDATED SUBMIT BUTTON */
+        .btn-submit { background: #03dac6; padding: 25px; font-size: 20px; width: 100%; border-radius: 12px; }
 
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 15px; text-align: left; border-bottom: 1px solid #333; }
@@ -53,7 +54,7 @@
                 <input type="text" id="name" placeholder="Name">
                 <input type="number" id="class" placeholder="Class (1-12)" min="1" max="12">
                 <input type="date" id="date">
-                <button onclick="addStudent()" style="width: auto;">Register</button>
+                <button onclick="addStudent()">Register</button>
             </div>
             <div class="card">
                 <h3>Student List</h3>
@@ -63,8 +64,8 @@
 
         <div id="attendance" class="section">
             <div class="sub-nav">
-                <button class="sub-btn active" id="btn-today" onclick="showSubSection('today')">Today</button>
-                <button class="sub-btn" id="btn-history" onclick="showSubSection('history')">History</button>
+                <div class="sub-btn active" id="btn-today" onclick="showSubSection('today')">Today</div>
+                <div class="sub-btn" id="btn-history" onclick="showSubSection('history')">History</div>
             </div>
 
             <div id="today" class="sub-section">
@@ -77,7 +78,7 @@
                         </table>
                     </div>
                     <div class="submit-wrapper">
-                        <button class="btn-submit" onclick="submitAttendance()">Final Submit<br>to History</button>
+                        <button class="btn-submit" onclick="submitAttendance()">Submit</button>
                     </div>
                 </div>
             </div>
@@ -87,7 +88,7 @@
                     <h3>Attendance History</h3>
                     <div id="historyDates">No History Yet</div>
                     <div id="historyDetail" style="display:none;">
-                        <button onclick="backToDates()" style="background:#444; color:white; margin-bottom:10px; width:auto;">← Back</button>
+                        <button onclick="backToDates()" style="background:#444; color:white; margin-bottom:10px;">← Back</button>
                         <h4 id="viewingDate"></h4>
                         <table id="historyDetailTable">
                             <thead><tr><th>Name</th><th>Status</th></tr></thead>
@@ -140,7 +141,7 @@
             const history = JSON.parse(localStorage.getItem('attHistory') || '[]');
             history.push({ date: today, records: attendanceData });
             localStorage.setItem('attHistory', JSON.stringify(history));
-            alert("Attendance submitted for " + today);
+            alert("Attendance submitted!");
             attendanceData = {};
             showSubSection('history');
         }
