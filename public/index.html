@@ -9,33 +9,25 @@
         .navbar { background: #1f1b24; display: flex; justify-content: space-around; padding: 15px; border-bottom: 2px solid #bb86fc; position: sticky; top: 0; z-index: 100; }
         .nav-item { color: #bb86fc; text-decoration: none; font-weight: bold; cursor: pointer; padding: 5px 15px; border-radius: 5px; }
         .nav-item.active { background: #332940; color: white; }
-        .container { max-width: 1100px; margin: 20px auto; padding: 20px; }
+        .container { max-width: 900px; margin: 20px auto; padding: 20px; }
         .section { display: none; } 
         .section.active { display: block; } 
         .card { background: #1e1e1e; padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #333; }
         
-        .layout-with-sidebar { display: flex; gap: 20px; align-items: flex-start; }
-        .table-wrapper { flex: 3; }
-        .side-wrapper { flex: 1; position: sticky; top: 80px; }
-
-        .sub-nav { margin-bottom: 20px; display: flex; gap: 10px; }
-        .sub-btn { background: #333; color: #bb86fc; border: 1px solid #bb86fc; padding: 8px 20px; border-radius: 20px; cursor: pointer; width: 50%; text-align: center; }
-        .sub-btn.active { background: #bb86fc; color: black; }
-        
-        input { background: #2c2c2c; border: 1px solid #444; color: white; padding: 10px; border-radius: 6px; margin: 2px; }
+        input { background: #2c2c2c; border: 1px solid #444; color: white; padding: 10px; border-radius: 6px; }
         input[type="date"] { color-scheme: dark; }
-        input[type="radio"] { transform: scale(1.6); cursor: pointer; accent-color: #bb86fc; margin-right: 10px; }
+        input[type="radio"] { transform: scale(1.6); cursor: pointer; accent-color: #bb86fc; margin-right: 8px; }
         
         button { background: #bb86fc; color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-large { background: #03dac6; padding: 25px; font-size: 20px; width: 100%; border-radius: 12px; }
-        .btn-small { padding: 5px 10px; font-size: 12px; background: #03dac6; margin-left: 5px; }
+        .btn-submit-date { background: #03dac6; padding: 8px 15px; font-size: 14px; margin-left: 10px; }
 
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #333; }
         th { color: #bb86fc; }
         
-        .date-input-area { display: none; align-items: center; margin-top: 5px; }
-        .submitted-text { color: #03dac6; font-weight: bold; font-size: 14px; }
+        /* Container for the toggling UI */
+        .fees-action-container { min-height: 45px; display: flex; align-items: center; }
+        .submitted-msg { color: #03dac6; font-weight: bold; border: 1px solid #03dac6; padding: 8px 15px; border-radius: 8px; background: rgba(3, 218, 198, 0.1); }
     </style>
 </head>
 <body>
@@ -66,26 +58,14 @@
             </div>
         </div>
 
-        <!-- ATTENDANCE SECTION -->
+        <!-- ATTENDANCE SECTION (Simplified logic) -->
         <div id="attendance" class="section">
-            <div class="sub-nav">
-                <div class="sub-btn active" id="btn-today" onclick="showSubSection('today')">Today</div>
-                <div class="sub-btn" id="btn-history" onclick="showSubSection('history')">History</div>
-            </div>
-            <div id="today" class="sub-section">
-                <div class="layout-with-sidebar">
-                    <div class="card table-wrapper">
-                        <h3>Today's Attendance</h3>
-                        <table>
-                            <thead><tr><th>Name</th><th>Present</th><th>Absent</th></tr></thead>
-                            <tbody id="attendanceTodayList"></tbody>
-                        </table>
-                    </div>
-                    <div class="side-wrapper"><button class="btn-large" onclick="submitAttendance()">Submit</button></div>
-                </div>
-            </div>
-            <div id="history" class="sub-section" style="display:none;">
-                <div class="card"><div id="historyDates">No History Yet</div></div>
+            <div class="card">
+                <h3>Today's Attendance</h3>
+                <table id="attendanceTable">
+                    <thead><tr><th>Name</th><th>Present</th><th>Absent</th></tr></thead>
+                    <tbody id="attendanceTodayList"></tbody>
+                </table>
             </div>
         </div>
 
@@ -96,9 +76,8 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Status Selection</th>
-                            <th>Payment Details</th>
+                            <th>Student Name</th>
+                            <th>Status / Action</th>
                         </tr>
                     </thead>
                     <tbody id="feesStudentList"></tbody>
@@ -117,21 +96,16 @@
             document.getElementById('nav-' + id).classList.add('active');
         }
 
-        function showSubSection(subId) {
-            document.getElementById('today').style.display = subId === 'today' ? 'block' : 'none';
-            document.getElementById('history').style.display = subId === 'history' ? 'block' : 'none';
-            document.getElementById('btn-today').classList.toggle('active', subId === 'today');
-            document.getElementById('btn-history').classList.toggle('active', subId === 'history');
-        }
-
         async function loadData() {
             const res = await fetch('/api/students');
             students = await res.json();
             
+            // Update Students Tab
             document.getElementById('homeList').innerHTML = students.map(s => `
                 <tr><td>${s.name}</td><td>${s.class}</td><td>${s.admissionDate || 'N/A'}</td></tr>
             `).join('');
 
+            // Update Attendance Tab
             document.getElementById('attendanceTodayList').innerHTML = students.map(s => `
                 <tr>
                     <td>${s.name}</td>
@@ -140,47 +114,51 @@
                 </tr>
             `).join('');
 
-            // FEES TAB LOGIC
-            document.getElementById('feesStudentList').innerHTML = students.map((s, index) => `
+            // Update Fees Tab with Toggling UI
+            document.getElementById('feesStudentList').innerHTML = students.map((s, i) => `
                 <tr>
                     <td>${s.name}</td>
                     <td>
-                        <label><input type="radio" name="fee-${index}" onclick="handleFeeClick(${index}, 'Paid')"> Paid</label>
-                        <label style="margin-left:15px;"><input type="radio" name="fee-${index}" onclick="handleFeeClick(${index}, 'Pending')"> Pending</label>
-                    </td>
-                    <td id="fee-action-${index}">
-                        <div id="date-box-${index}" class="date-input-area">
-                            <input type="date" id="input-date-${index}">
-                            <button class="btn-small" onclick="lockFeeDate(${index})">Submit Date</button>
+                        <div id="fee-container-${i}" class="fees-action-container">
+                            <label><input type="radio" name="fee-opt-${i}" onclick="showDatePicker(${i})"> Paid</label>
+                            <label style="margin-left:20px;"><input type="radio" name="fee-opt-${i}" onclick="hideDatePicker(${i})"> Pending</label>
                         </div>
                     </td>
                 </tr>
             `).join('');
         }
 
-        function handleFeeClick(index, status) {
-            const dateBox = document.getElementById(`date-box-${index}`);
-            if (status === 'Paid') {
-                dateBox.style.display = 'flex';
-            } else {
-                dateBox.style.display = 'none';
-            }
+        function showDatePicker(index) {
+            const container = document.getElementById(`fee-container-${index}`);
+            container.innerHTML = `
+                <input type="date" id="date-input-${index}">
+                <button class="btn-submit-date" onclick="finalizeFee(${index})">Submit</button>
+                <button style="background:transparent; color:#cf6679; margin-left:10px;" onclick="resetFeeRow(${index})">Cancel</button>
+            `;
         }
 
-        function lockFeeDate(index) {
-            const dateInput = document.getElementById(`input-date-${index}`).value;
-            if (!dateInput) return alert("Please select a date first");
-            
-            const displayArea = document.getElementById(`fee-action-${index}`);
-            // Format date to DD-MM-YYYY
-            const d = new Date(dateInput);
+        function hideDatePicker(index) {
+            // Keep it as "Pending" selection
+        }
+
+        function resetFeeRow(index) {
+            const container = document.getElementById(`fee-container-${index}`);
+            const studentName = students[index].name;
+            container.innerHTML = `
+                <label><input type="radio" name="fee-opt-${index}" onclick="showDatePicker(${index})"> Paid</label>
+                <label style="margin-left:20px;"><input type="radio" name="fee-opt-${index}" onclick="hideDatePicker(${index})"> Pending</label>
+            `;
+        }
+
+        function finalizeFee(index) {
+            const dateVal = document.getElementById(`date-input-${index}`).value;
+            if (!dateVal) return alert("Select a date!");
+
+            const d = new Date(dateVal);
             const formattedDate = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
             
-            displayArea.innerHTML = `<span class="submitted-text">Submitted on ${formattedDate}</span>`;
-            
-            // Disable the radio buttons for this student to lock status
-            const radios = document.getElementsByName(`fee-${index}`);
-            radios.forEach(r => r.disabled = true);
+            const container = document.getElementById(`fee-container-${index}`);
+            container.innerHTML = `<span class="submitted-msg">Submitted on ${formattedDate}</span>`;
         }
 
         async function addStudent() {
@@ -194,6 +172,7 @@
             });
             loadData();
         }
+
         loadData();
     </script>
 </body>
