@@ -47,16 +47,21 @@
         .fees-done { color: var(--green); font-weight: bold; font-style: italic; }
         .history-card { background: #252525; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--accent); }
 
-        /* Vertical Month Menu Styling */
         .month-item { color: var(--accent); cursor: pointer; font-size: 14px; padding: 10px; border: 1px solid var(--accent); border-radius: 8px; transition: 0.2s; text-align: center; }
         .month-item.active { background: var(--accent); color: #000; font-weight: bold; }
         .fees-layout { display: flex; gap: 25px; align-items: flex-start; flex-wrap: wrap; }
         .months-sidebar { display: flex; flex-direction: column; gap: 10px; min-width: 140px; border-right: 1px solid #444; padding-right: 20px; }
         .fees-content { flex: 1; min-width: 300px; }
+
+        /* Modal Styles */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .modal-card { background: var(--card); padding: 30px; border-radius: 12px; border: 1px solid var(--accent); width: 90%; max-width: 450px; position: relative; max-height: 85vh; overflow-y: auto; }
+        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 28px; color: var(--red); cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
+    <!-- LOGIN GATE -->
     <div id="view-auth" class="hidden" style="display: flex; justify-content: center; align-items: center; height: 100vh;">
         <div class="card" style="text-align: center; width: 320px;">
             <h1 style="color: var(--accent);">Tuition Hub</h1>
@@ -64,6 +69,7 @@
         </div>
     </div>
 
+    <!-- NAME SETUP -->
     <div id="view-name-setup" class="hidden" style="display: flex; justify-content: center; align-items: center; height: 100vh;">
         <div class="card" style="text-align: center; width: 350px;">
             <h2 style="color: var(--accent);">Welcome!</h2>
@@ -73,6 +79,7 @@
         </div>
     </div>
 
+    <!-- GROUP SELECTOR -->
     <div id="view-setup" class="hidden">
         <div class="container">
             <h2 style="color: var(--accent);">Your Batches</h2>
@@ -88,6 +95,17 @@
         </div>
     </div>
 
+    <!-- STUDENT SPECIFIC FEE MODAL -->
+    <div id="studentFeeModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <span class="close-btn" onclick="document.getElementById('studentFeeModal').classList.add('hidden')">&times;</span>
+            <h2 id="modalStudentName" style="color: var(--accent); margin-top: 0;">Student Name</h2>
+            <p style="color: #aaa; margin-top: -10px; margin-bottom: 20px;">Annual Fee Status</p>
+            <div id="modalFeeContent">Loading...</div>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD -->
     <div id="main-ui" class="hidden">
         <div id="view-home">
             <div class="navbar">
@@ -105,7 +123,6 @@
                     <div class="card" id="registerCard">
                         <h3>Register Student</h3>
                         <input type="text" id="s-name" placeholder="Name">
-                        
                         <select id="s-class">
                             <option value="" disabled selected>Select Class</option>
                             <option value="Nursery">Nursery</option>
@@ -124,7 +141,6 @@
                             <option value="11">11</option>
                             <option value="12">12</option>
                         </select>
-
                         <input type="date" id="s-date">
                         <button onclick="addStudent()">Register</button>
                     </div>
@@ -132,7 +148,11 @@
                     <div id="adminBadge" style="text-align: center; color: var(--green); font-weight: bold; font-size: 18px; margin-bottom: 20px; padding: 10px; background: #1a1a1a; border-radius: 8px; border: 1px dashed var(--green);" class="hidden"></div>
 
                     <div class="card">
-                        <table><thead><tr><th>Name</th><th>Class</th><th>Date</th></tr></thead><tbody id="homeList"></tbody></table>
+                        <table>
+                            <!-- Roll Number added to table header -->
+                            <thead><tr><th>Roll</th><th>Name</th><th>Class</th><th>Date</th></tr></thead>
+                            <tbody id="homeList"></tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -144,7 +164,11 @@
                     <div id="branch-today" class="att-branch">
                         <div class="card" style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
                             <div style="flex: 3; min-width: 300px;">
-                                <table><thead><tr><th>Name</th><th style="text-align:center;">P</th><th style="text-align:center;">A</th></tr></thead><tbody id="attList"></tbody></table>
+                                <table>
+                                    <!-- Roll Number added to table header -->
+                                    <thead><tr><th>Roll</th><th>Name</th><th style="text-align:center;">P</th><th style="text-align:center;">A</th></tr></thead>
+                                    <tbody id="attList"></tbody>
+                                </table>
                             </div>
                             <button id="submit-att-btn" onclick="submitAttendance()" style="flex: 1; background: var(--green); padding: 30px; font-size: 20px; border-radius: 12px; min-width: 200px;">Submit</button>
                         </div>
@@ -154,19 +178,20 @@
                     </div>
                 </div>
 
-                <!-- UPDATED VERTICAL FEES SECTION -->
                 <div id="section-fees" class="section">
                     <div class="card fees-layout">
                         
-                        <!-- Left Sidebar: Vertical Months -->
                         <div class="months-sidebar" id="feeMonthsContainer">
                             <!-- Months injected via JS -->
                         </div>
 
-                        <!-- Right Area: Student Fees Table -->
                         <div class="fees-content">
                             <h3 id="currentMonthHeader" style="margin-top: 0; color: var(--accent);">Fees Status</h3>
-                            <table><thead><tr><th>Name</th><th>Status</th></tr></thead><tbody id="feesList"></tbody></table>
+                            <table>
+                                <!-- Roll Number added to table header -->
+                                <thead><tr><th>Roll</th><th>Name</th><th>Status</th></tr></thead>
+                                <tbody id="feesList"></tbody>
+                            </table>
                         </div>
 
                     </div>
@@ -238,7 +263,6 @@
         let isAdmin = false;
         let currentStudentsData = []; 
 
-        // Fees State Tracking (Year is now invisible)
         let currentFeeYear = new Date().getFullYear();
         let currentFeeMonth = new Date().getMonth(); 
         const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -434,24 +458,33 @@
             const rem = document.getElementById('removalList');
             
             home.innerHTML = ""; att.innerHTML = ""; rem.innerHTML = "";
-            currentStudentsData = []; 
+            let studentsArray = []; 
 
             snapshot.forEach(doc => {
-                const s = doc.data();
-                const id = doc.id;
-                currentStudentsData.push({ id, name: s.name, class: s.class });
+                studentsArray.push({ id: doc.id, ...doc.data() });
+            });
 
+            // FIX: Alphabetical Sorting
+            studentsArray.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+            
+            currentStudentsData = studentsArray;
+
+            studentsArray.forEach((s, index) => {
+                const rollNo = index + 1; // Assign Roll Number dynamically based on alphabetical order
                 const displayDate = s.admissionDate ? s.admissionDate.split('-').reverse().join('-') : 'N/A';
                 
-                home.innerHTML += `<tr><td>${s.name}</td><td>${s.class}</td><td>${displayDate}</td></tr>`;
+                // Clickable name that triggers the fee modal
+                const clickableName = `<span style="color: var(--accent); cursor: pointer; font-weight: bold; text-decoration: underline;" onclick="viewStudentFees('${s.id}', '${s.name}')">${s.name}</span>`;
+                
+                home.innerHTML += `<tr><td>${rollNo}</td><td>${clickableName}</td><td>${s.class}</td><td>${displayDate}</td></tr>`;
                 
                 const disabledAttr = (isAdmin && !isLockedForAdmin) ? "" : "disabled";
-                att.innerHTML += `<tr><td>${s.name}</td>
-                    <td style="text-align:center;"><input type="radio" name="at-${id}" id="p-${id}" ${disabledAttr}></td>
-                    <td style="text-align:center;"><input type="radio" name="at-${id}" id="a-${id}" ${disabledAttr}></td></tr>`;
+                att.innerHTML += `<tr><td>${rollNo}</td><td>${s.name}</td>
+                    <td style="text-align:center;"><input type="radio" name="at-${s.id}" id="p-${s.id}" ${disabledAttr}></td>
+                    <td style="text-align:center;"><input type="radio" name="at-${s.id}" id="a-${s.id}" ${disabledAttr}></td></tr>`;
                 
                 if (isAdmin) {
-                    rem.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #333;"><span>${s.name}</span><button onclick="deleteStudent('${id}')" style="background:var(--red); color:white; padding:5px 12px; font-size:12px;">Remove</button></div>`;
+                    rem.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #333;"><span><b>${rollNo}.</b> ${s.name}</span><button onclick="deleteStudent('${s.id}')" style="background:var(--red); color:white; padding:5px 12px; font-size:12px;">Remove</button></div>`;
                 }
             });
 
@@ -459,8 +492,45 @@
             loadFeesForMonth();
         }
 
-        // --- UPDATED VERTICAL FEES LOGIC ---
+        // --- NEW INDIVIDUAL STUDENT FEE MODAL ---
+        async function viewStudentFees(studentId, studentName) {
+            const modal = document.getElementById('studentFeeModal');
+            document.getElementById('modalStudentName').innerText = studentName;
+            const content = document.getElementById('modalFeeContent');
+            content.innerHTML = "Fetching records...";
+            modal.classList.remove('hidden');
 
+            try {
+                // Fetch fees specifically for this student
+                const feeSnap = await db.collection('fees')
+                    .where('groupId', '==', activeGroupID)
+                    .where('studentId', '==', studentId)
+                    .where('year', '==', currentFeeYear)
+                    .get();
+
+                let paidMonths = {};
+                feeSnap.forEach(doc => { paidMonths[doc.data().month] = doc.data().paidDate; });
+
+                let html = "<table style='width:100%; text-align:left;'><thead><tr><th>Month</th><th>Status</th></tr></thead><tbody>";
+                
+                monthNames.forEach((month, index) => {
+                    if (paidMonths[index]) {
+                        const d = paidMonths[index].split('-').reverse().join('-');
+                        html += `<tr><td style="color:var(--accent); font-weight:bold;">${month}</td><td><span class="fees-done">Paid (${d})</span></td></tr>`;
+                    } else {
+                        html += `<tr><td style="color:#aaa;">${month}</td><td><span style="color:var(--red); font-style:italic; font-weight:bold;">Pending</span></td></tr>`;
+                    }
+                });
+                
+                html += "</tbody></table>";
+                content.innerHTML = html;
+            } catch (err) {
+                content.innerHTML = "Error loading fee details.";
+                console.error(err);
+            }
+        }
+
+        // --- FEES TAB LOGIC ---
         function renderFeeNavigation() {
             const container = document.getElementById('feeMonthsContainer');
             container.innerHTML = "";
@@ -479,7 +549,7 @@
 
         async function loadFeesForMonth() {
             const feesList = document.getElementById('feesList');
-            feesList.innerHTML = `<tr><td colspan="2">Loading...</td></tr>`;
+            feesList.innerHTML = `<tr><td colspan="3">Loading...</td></tr>`;
 
             const feeSnap = await db.collection('fees')
                 .where('groupId', '==', activeGroupID)
@@ -491,7 +561,8 @@
             feeSnap.forEach(doc => { paidMap[doc.data().studentId] = doc.data().paidDate; });
 
             feesList.innerHTML = "";
-            currentStudentsData.forEach(s => {
+            currentStudentsData.forEach((s, index) => {
+                const rollNo = index + 1;
                 const isPaidDate = paidMap[s.id];
                 let statusHtml = "";
 
@@ -510,10 +581,10 @@
                         statusHtml = `<span style="color: var(--red); font-style: italic; font-weight: bold;">Pending</span>`;
                     }
                 }
-                feesList.innerHTML += `<tr><td>${s.name}</td><td>${statusHtml}</td></tr>`;
+                feesList.innerHTML += `<tr><td>${rollNo}</td><td>${s.name}</td><td>${statusHtml}</td></tr>`;
             });
 
-            if (currentStudentsData.length === 0) feesList.innerHTML = "<tr><td colspan='2'>No students found.</td></tr>";
+            if (currentStudentsData.length === 0) feesList.innerHTML = "<tr><td colspan='3'>No students found.</td></tr>";
         }
 
         function showFeeInput(id) {
@@ -559,7 +630,6 @@
                 btn.innerText = "Submit";
             }
         }
-        // --- END FEES LOGIC ---
 
         async function promoteToAdmin() {
             const emailInput = document.getElementById('newAdminEmail');
