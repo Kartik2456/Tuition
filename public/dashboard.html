@@ -16,7 +16,6 @@
         .section { display: none; }
         .section.active { display: block; }
 
-        /* Navigation Styles */
         .navbar { background: #1f1b24; display: flex; justify-content: space-around; padding: 15px; border-bottom: 2px solid var(--accent); position: sticky; top: 0; z-index: 100; }
         .nav-item { color: var(--accent); font-weight: bold; cursor: pointer; padding: 8px 20px; border-radius: 8px; }
         .nav-item.active { background: #332940; color: white; box-shadow: 0 0 10px var(--accent); }
@@ -24,7 +23,6 @@
         .bottom-item { color: var(--accent); font-weight: bold; cursor: pointer; text-align: center; flex: 1; opacity: 0.6; }
         .bottom-item.active { color: white; opacity: 1; }
 
-        /* Attendance Sub-Nav */
         .sub-nav { display: flex; gap: 15px; margin-bottom: 20px; }
         .sub-item { color: var(--accent); cursor: pointer; font-size: 14px; padding: 5px 12px; border: 1px solid var(--accent); border-radius: 20px; }
         .sub-item.active { background: var(--accent); color: #000; }
@@ -32,12 +30,15 @@
         .container { max-width: 1000px; margin: 20px auto; padding: 0 20px; }
         .card { background: var(--card); padding: 25px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #333; }
         
-        /* Group Selection Cards */
         .group-card { background: #252525; padding: 15px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid var(--accent); cursor: pointer; transition: 0.2s; }
         .group-card:hover { background: #2d2d2d; transform: scale(1.01); }
 
         input, button { background: #2c2c2c; border: 1px solid #444; color: white; padding: 10px; border-radius: 6px; margin: 5px; }
-        input[type="radio"] { transform: scale(1.8); cursor: pointer; accent-color: var(--accent); margin-right: 5px; vertical-align: middle; }
+        input[type="radio"] { transform: scale(1.8); cursor: pointer; accent-color: var(--accent); margin-right: 8px; vertical-align: middle; }
+        
+        /* FIX 4: Adding gap between labels */
+        label { margin-right: 25px; cursor: pointer; } 
+        
         button { background: var(--accent); color: #000; border: none; font-weight: bold; cursor: pointer; }
         .btn-submit-date { background: var(--green); color: #000; padding: 8px 15px; }
         
@@ -50,7 +51,6 @@
 </head>
 <body>
 
-    <!-- 1. LOGIN GATE -->
     <div id="view-auth" class="hidden" style="display: flex; justify-content: center; align-items: center; height: 100vh;">
         <div class="card" style="text-align: center; width: 320px;">
             <h1 style="color: var(--accent);">Tuition Hub</h1>
@@ -58,12 +58,10 @@
         </div>
     </div>
 
-    <!-- 2. GROUP SELECTOR / SETUP GATE -->
     <div id="view-setup" class="hidden">
         <div class="container">
             <h2 style="color: var(--accent);">Your Batches</h2>
             <div id="groupListContainer"></div>
-            
             <div class="card" style="margin-top: 30px;">
                 <h3>Start New or Join</h3>
                 <input type="text" id="newGroupName" placeholder="Enter Batch Name" style="width: 60%;">
@@ -75,7 +73,6 @@
         </div>
     </div>
 
-    <!-- 3. MAIN DASHBOARD UI -->
     <div id="main-ui" class="hidden">
         <div id="view-home">
             <div class="navbar">
@@ -88,7 +85,6 @@
             <div class="container">
                 <h2 id="activeGroupName" style="color: var(--accent); margin-bottom: 20px;"></h2>
 
-                <!-- Students Section -->
                 <div id="section-students" class="section active">
                     <div class="card">
                         <h3>Register Student</h3>
@@ -102,7 +98,6 @@
                     </div>
                 </div>
 
-                <!-- Attendance Section -->
                 <div id="section-attendance" class="section">
                     <div class="sub-nav">
                         <div class="sub-item active" id="sub-today" onclick="switchAttBranch('today')">Today (<span id="currentDateDisplay"></span>)</div>
@@ -121,7 +116,6 @@
                     </div>
                 </div>
 
-                <!-- Fees Section -->
                 <div id="section-fees" class="section">
                     <div class="card">
                         <h3>Fees Tracker</h3>
@@ -131,13 +125,17 @@
             </div>
         </div>
 
-        <!-- Profile View -->
         <div id="view-profile" class="hidden">
             <div class="container">
                 <div class="card" style="text-align: center;">
                     <img id="userImg" style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--accent); margin-bottom: 10px;">
                     <h2 id="userNameDisplay"></h2>
                     <button onclick="handleLogout()" style="background: var(--red); color: white; width: 100%;">Logout Account</button>
+                </div>
+                <!-- FIX 1: List of students to remove -->
+                <div class="card">
+                    <h3>Remove Students</h3>
+                    <div id="removalList">Loading...</div>
                 </div>
                 <div class="card">
                     <h3>Batch Join Codes</h3>
@@ -168,7 +166,6 @@
         let activeGroupID = null;
         document.getElementById('currentDateDisplay').innerText = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
 
-        // VERIFICATION & AUTH BRAIN
         auth.onAuthStateChanged(async (user) => {
             if (user) {
                 document.getElementById('view-auth').classList.add('hidden');
@@ -187,30 +184,19 @@
             const groupList = document.getElementById('groupListContainer');
             const profileList = document.getElementById('profileGroupList');
             groupList.innerHTML = ""; profileList.innerHTML = "";
-
-            if (snapshot.empty && !activeGroupID) {
-                document.getElementById('view-setup').classList.remove('hidden');
-                return;
-            }
-
+            if (snapshot.empty && !activeGroupID) { document.getElementById('view-setup').classList.remove('hidden'); return; }
             snapshot.forEach(async (memberDoc) => {
                 const groupDoc = await db.collection('groups').doc(memberDoc.data().groupId).get();
                 const data = groupDoc.data();
-                const card = `
-                    <div class="group-card" onclick="enterGroup('${groupDoc.id}', '${data.name}')">
-                        <span>${data.name}</span>
-                        <small style="color: var(--accent);">CODE: ${data.code}</small>
-                    </div>`;
-                groupList.innerHTML += card;
-                profileList.innerHTML += card;
+                const card = `<div class="group-card" onclick="enterGroup('${groupDoc.id}', '${data.name}')"><span>${data.name}</span><small style="color: var(--accent);">CODE: ${data.code}</small></div>`;
+                groupList.innerHTML += card; profileList.innerHTML += card;
             });
-            
             if (!activeGroupID) document.getElementById('view-setup').classList.remove('hidden');
         }
 
         async function createGroup() {
             const name = document.getElementById('newGroupName').value;
-            if(!name) return alert("Batch name is required!");
+            if(!name) return alert("Batch name required!");
             const code = Math.random().toString(36).substring(2, 8).toUpperCase();
             const groupRef = await db.collection('groups').add({ name, code, owner: auth.currentUser.uid });
             await db.collection('members').add({ uid: auth.currentUser.uid, groupId: groupRef.id });
@@ -240,15 +226,27 @@
             const home = document.getElementById('homeList');
             const att = document.getElementById('attList');
             const fees = document.getElementById('feesList');
-            home.innerHTML = ""; att.innerHTML = ""; fees.innerHTML = "";
+            const rem = document.getElementById('removalList'); // For FIX 1
+            home.innerHTML = ""; att.innerHTML = ""; fees.innerHTML = ""; rem.innerHTML = "";
 
             snapshot.forEach(doc => {
                 const s = doc.data();
                 const id = doc.id;
-                home.innerHTML += `<tr><td>${s.name}</td><td>${s.class}</td><td>${s.admissionDate}</td></tr>`;
-                att.innerHTML += `<tr><td>${s.name}</td><td style="text-align:center;"><input type="radio" name="at-${id}"></td><td style="text-align:center;"><input type="radio" name="at-${id}"></td></tr>`;
+                // FIX 2: Reversing date for display to DD-MM-YYYY
+                const displayDate = s.admissionDate ? s.admissionDate.split('-').reverse().join('-') : 'N/A';
+                home.innerHTML += `<tr><td>${s.name}</td><td>${s.class}</td><td>${displayDate}</td></tr>`;
+                att.innerHTML += `<tr><td>${s.name}</td><td style="text-align:center;"><input type="radio" name="at-${id}" class="att-radio-${id}"></td><td style="text-align:center;"><input type="radio" name="at-${id}" class="att-radio-${id}"></td></tr>`;
                 fees.innerHTML += `<tr><td>${s.name}</td><td id="f-cont-${id}"><input type="radio" name="p-${id}" id="pd-${id}" onclick="toggleDateInput('${id}')"><label for="pd-${id}">Paid</label> <input type="radio" name="p-${id}" id="pn-${id}" checked><label for="pn-${id}">Pending</label></td></tr>`;
+                // FIX 1: Populate removal list in Profile
+                rem.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #333;"><span>${s.name}</span><button onclick="deleteStudent('${id}')" style="background:var(--red); color:white; padding:5px 12px; font-size:12px;">Remove</button></div>`;
             });
+        }
+
+        async function deleteStudent(id) {
+            if(confirm("Permanently remove this student?")) {
+                await db.collection('students').doc(id).delete();
+                loadData();
+            }
         }
 
         function toggleDateInput(id) {
@@ -261,18 +259,32 @@
             document.getElementById('f-cont-' + id).innerHTML = `<span class="fees-done">Fees is submitted on ${dateVal.split('-').reverse().join('-')}</span>`;
         }
 
+        // FIX 3: Disable inputs and record to history
         async function submitAttendance() {
             const today = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
             const records = [];
-            document.querySelectorAll('#attList tr').forEach(row => {
-                const name = row.cells[0].innerText;
-                const radios = row.querySelectorAll('input[type="radio"]');
-                records.push({ name, status: radios[0].checked ? "Present" : (radios[1].checked ? "Absent" : "Not Marked") });
+            const snapshot = await db.collection('students').where('groupId', '==', activeGroupID).get();
+            
+            snapshot.forEach(doc => {
+                const id = doc.id;
+                const radios = document.getElementsByClassName(`att-radio-${id}`);
+                const status = radios[0].checked ? "Present" : (radios[1].checked ? "Absent" : "Not Marked");
+                records.push({ name: doc.data().name, status });
+                // Disable switches after submit
+                radios[0].disabled = true;
+                radios[1].disabled = true;
             });
-            await db.collection('attendance').add({ date: today, groupId: activeGroupID, records, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+
+            await db.collection('attendance').add({ 
+                date: today, 
+                groupId: activeGroupID, 
+                records, 
+                timestamp: firebase.firestore.FieldValue.serverTimestamp() 
+            });
+
             const btn = document.getElementById('submit-att-btn');
             btn.innerText = "Submitted"; btn.style.background = "#333"; btn.disabled = true;
-            alert("Attendance Recorded!");
+            alert("Attendance recorded in history!");
         }
 
         async function loadAttendanceHistory() {
@@ -318,6 +330,7 @@
             document.getElementById('view-profile').classList.toggle('hidden', v !== 'profile');
             document.getElementById('bot-home').classList.toggle('active', v === 'home');
             document.getElementById('bot-profile').classList.toggle('active', v === 'profile');
+            if(v === 'profile') loadData(); // Ensure removal list updates
         }
     </script>
 </body>
