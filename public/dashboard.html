@@ -98,7 +98,6 @@
                         <h3>Register Student</h3>
                         <input type="text" id="s-name" placeholder="Name">
                         
-                        <!-- FIX 1: Dropdown for Class -->
                         <select id="s-class">
                             <option value="" disabled selected>Select Class</option>
                             <option value="Nursery">Nursery</option>
@@ -122,6 +121,7 @@
                         <button onclick="addStudent()">Register</button>
                     </div>
 
+                    <!-- This badge will now show for everyone -->
                     <div id="adminBadge" style="text-align: center; color: var(--green); font-weight: bold; font-size: 18px; margin-bottom: 20px; padding: 10px; background: #1a1a1a; border-radius: 8px; border: 1px dashed var(--green);" class="hidden"></div>
 
                     <div class="card">
@@ -189,7 +189,6 @@
                     <div id="removalList">Loading...</div>
                 </div>
 
-                <!-- Profile Batch List with Leave Buttons -->
                 <div class="card">
                     <h3>My Batches</h3>
                     <div id="profileGroupList"></div>
@@ -275,10 +274,8 @@
                 if (groupDoc.exists) {
                     const data = groupDoc.data();
                     
-                    // Setup Screen Card (Clicking enters the group)
                     groupList.innerHTML += `<div class="group-card" onclick="enterGroup('${groupDoc.id}', '${data.name}')"><span>${data.name}</span><small style="color: var(--accent);">CODE: ${data.code}</small></div>`;
                     
-                    // FIX 2: Profile Screen Card (Includes the Leave Group button)
                     profileList.innerHTML += `
                         <div class="group-card" style="cursor: default;">
                             <div onclick="enterGroup('${groupDoc.id}', '${data.name}')" style="flex:1; cursor:pointer;">
@@ -309,7 +306,6 @@
             const snapshot = await db.collection('groups').where('code', '==', code).get();
             if(snapshot.empty) return alert("Invalid Code!");
             
-            // Check if already in group
             const checkMem = await db.collection('members').where('uid', '==', auth.currentUser.uid).where('groupId', '==', snapshot.docs[0].id).get();
             if(!checkMem.empty) return alert("You are already in this batch!");
 
@@ -317,25 +313,18 @@
             location.reload();
         }
 
-        // NEW LEAVE GROUP LOGIC
         async function leaveGroup(groupId, memberDocId, groupName) {
             if (confirm(`Are you sure you want to leave the group "${groupName}"?`)) {
                 try {
-                    // Remove member document
                     await db.collection('members').doc(memberDocId).delete();
-                    
-                    // Clean admin array just in case the leaving user was an admin
                     await db.collection('groups').doc(groupId).update({
                         admins: firebase.firestore.FieldValue.arrayRemove(auth.currentUser.email.toLowerCase())
                     });
-
                     alert(`You have left ${groupName}.`);
-
-                    // If they are leaving the group they are currently viewing, back out to setup
                     if (activeGroupID === groupId) {
                         exitGroup();
                     } else {
-                        loadUserGroups(); // Refresh UI
+                        loadUserGroups(); 
                     }
                 } catch (e) {
                     console.error("Error leaving group:", e);
@@ -382,6 +371,11 @@
 
             const uniqueAdmins = Array.from(adminsMap.values());
 
+            // FIX: Show the admin badge to EVERYONE
+            const badgePrefix = uniqueAdmins.length > 1 ? "Batch Admins" : "Batch Admin";
+            document.getElementById('adminBadge').innerText = `${badgePrefix}: ${uniqueAdmins.join(', ')}`;
+            document.getElementById('adminBadge').classList.remove('hidden');
+
             if (isAdmin) {
                 document.getElementById('registerCard').classList.remove('hidden');
                 document.getElementById('submit-att-btn').classList.remove('hidden');
@@ -390,9 +384,6 @@
                 document.getElementById('adminDemotionCard').classList.remove('hidden'); 
                 document.getElementById('adminListCard').classList.remove('hidden'); 
                 
-                const badgePrefix = uniqueAdmins.length > 1 ? "Batch Admins" : "Batch Admin";
-                document.getElementById('adminBadge').innerText = `${badgePrefix}: ${uniqueAdmins.join(', ')}`;
-                document.getElementById('adminBadge').classList.remove('hidden');
                 document.getElementById('userRoleDisplay').innerText = "Role: Admin";
 
                 const adminListDisplay = document.getElementById('adminListDisplay');
@@ -412,7 +403,6 @@
                 document.getElementById('adminPromotionCard').classList.add('hidden');
                 document.getElementById('adminDemotionCard').classList.add('hidden');
                 document.getElementById('adminListCard').classList.add('hidden'); 
-                document.getElementById('adminBadge').classList.add('hidden');
                 document.getElementById('userRoleDisplay').innerText = "Role: Student / Member";
             }
 
@@ -598,7 +588,7 @@
 
         async function addStudent() {
             const nameInput = document.getElementById('s-name');
-            const classInput = document.getElementById('s-class'); // Now reads from select
+            const classInput = document.getElementById('s-class');
             const dateInput = document.getElementById('s-date');
             const regBtn = event.target;
 
