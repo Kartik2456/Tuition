@@ -278,27 +278,44 @@
             
             const groupDoc = await db.collection('groups').doc(id).get();
             const adminArray = groupDoc.data().admins || [];
-            isAdmin = adminArray.includes(auth.currentUser.email.toLowerCase());
+            
+            // Normalize current user email for safe checking
+            const currentEmail = auth.currentUser.email.toLowerCase();
+            isAdmin = adminArray.includes(currentEmail);
 
-            // FIX 1: Fetch names and use a Set to remove any duplicates automatically
+            // FIX: Strong mapping to prevent "forgenext.offical" and "Kool" from duplicating
             let adminNames = new Set();
+            
             if (adminArray.length > 0) {
                 try {
-                    const promises = adminArray.map(email => db.collection('users').where('email', '==', email.toLowerCase()).get());
-                    const snaps = await Promise.all(promises);
-                    snaps.forEach((snap, index) => {
-                        if (!snap.empty) {
-                            adminNames.add(snap.docs[0].data().name); // Add true profile name
-                        } else {
-                            adminNames.add(adminArray[index].split('@')[0]); // Fallback
+                    const promises = adminArray.map(async (email) => {
+                        const checkEmail = email.toLowerCase();
+                        
+                        // If the admin email matches the CURRENT user, force use their known Name
+                        if (checkEmail === currentEmail && currentUserData) {
+                            return currentUserData.name;
                         }
+                        
+                        // Otherwise, query the database for their profile
+                        const snap = await db.collection('users').where('email', '==', checkEmail).get();
+                        if (!snap.empty) {
+                            return snap.docs[0].data().name;
+                        } else {
+                            // If it's a dirty manual entry in the database from testing, just use it directly
+                            return checkEmail.includes('@') ? checkEmail.split('@')[0] : checkEmail;
+                        }
+                    });
+                    
+                    const names = await Promise.all(promises);
+                    names.forEach(n => {
+                        if (n) adminNames.add(n); // The Set automatically absorbs duplicates!
                     });
                 } catch(error) {
                     console.error("Failed fetching admin names", error);
                 }
             }
 
-            const uniqueAdmins = Array.from(adminNames); // Converts the clean Set back into an array
+            const uniqueAdmins = Array.from(adminNames);
 
             if (isAdmin) {
                 document.getElementById('registerCard').classList.remove('hidden');
@@ -373,13 +390,11 @@
             });
         }
 
-        // FIX 2: Strict Validation for Admin Promotion
         async function promoteToAdmin() {
             const emailInput = document.getElementById('newAdminEmail');
             const email = emailInput.value.trim().toLowerCase();
             if(!email) return alert("Enter an email address.");
 
-            // Check if user exists in the app at all
             const userQuery = await db.collection('users').where('email', '==', email).get();
             if (userQuery.empty) {
                 return alert("User not found! They need to log into Tuition Hub first.");
@@ -387,7 +402,6 @@
             
             const targetUID = userQuery.docs[0].id;
 
-            // Check if they are actually a member of this specific batch
             const memberQuery = await db.collection('members')
                 .where('uid', '==', targetUID)
                 .where('groupId', '==', activeGroupID)
@@ -397,7 +411,6 @@
                 return alert("This person must join the batch using the Invite Code before they can be made an admin.");
             }
 
-            // Passed checks, add to admins array
             await db.collection('groups').doc(activeGroupID).update({
                 admins: firebase.firestore.FieldValue.arrayUnion(email)
             });
@@ -405,7 +418,6 @@
             alert(email + " has been successfully promoted to Admin!");
             emailInput.value = "";
             
-            // Refresh the view dynamically so the badge updates
             enterGroup(activeGroupID, document.getElementById('activeGroupName').innerText);
         }
 
