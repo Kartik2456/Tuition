@@ -49,6 +49,7 @@
 </head>
 <body>
 
+    <!-- 1. LOGIN GATE -->
     <div id="view-auth" class="hidden" style="display: flex; justify-content: center; align-items: center; height: 100vh;">
         <div class="card" style="text-align: center; width: 320px;">
             <h1 style="color: var(--accent);">Tuition Hub</h1>
@@ -56,6 +57,17 @@
         </div>
     </div>
 
+    <!-- 2. NAME SETUP (New Users Only) -->
+    <div id="view-name-setup" class="hidden" style="display: flex; justify-content: center; align-items: center; height: 100vh;">
+        <div class="card" style="text-align: center; width: 350px;">
+            <h2 style="color: var(--accent);">Welcome!</h2>
+            <p>Please enter your full name to continue.</p>
+            <input type="text" id="userNameInput" placeholder="Your Name" style="width: 80%; margin-bottom: 15px;">
+            <button onclick="saveNewUserName()" style="width: 85%;">Continue</button>
+        </div>
+    </div>
+
+    <!-- 3. GROUP SELECTOR -->
     <div id="view-setup" class="hidden">
         <div class="container">
             <h2 style="color: var(--accent);">Your Batches</h2>
@@ -71,6 +83,7 @@
         </div>
     </div>
 
+    <!-- 4. MAIN DASHBOARD -->
     <div id="main-ui" class="hidden">
         <div id="view-home">
             <div class="navbar">
@@ -83,19 +96,29 @@
             <div class="container">
                 <h2 id="activeGroupName" style="color: var(--accent); margin-bottom: 20px;"></h2>
 
+                <!-- Students Section -->
                 <div id="section-students" class="section active">
-                    <div class="card">
+                    
+                    <!-- Admin Only Register Card -->
+                    <div class="card" id="registerCard">
                         <h3>Register Student</h3>
                         <input type="text" id="s-name" placeholder="Name">
                         <input type="number" id="s-class" placeholder="Class">
                         <input type="date" id="s-date">
                         <button onclick="addStudent()">Register</button>
                     </div>
+
+                    <!-- Admin Badge goes right between register and list -->
+                    <div id="adminBadge" style="text-align: center; color: var(--green); font-weight: bold; font-size: 18px; margin-bottom: 20px; padding: 10px; background: #1a1a1a; border-radius: 8px; border: 1px dashed var(--green);" class="hidden">
+                        <!-- Name injected via JS -->
+                    </div>
+
                     <div class="card">
                         <table><thead><tr><th>Name</th><th>Class</th><th>Date</th></tr></thead><tbody id="homeList"></tbody></table>
                     </div>
                 </div>
 
+                <!-- Attendance Section -->
                 <div id="section-attendance" class="section">
                     <div class="sub-nav">
                         <div class="sub-item active" id="sub-today" onclick="switchAttBranch('today')">Today (<span id="currentDateDisplay"></span>)</div>
@@ -106,6 +129,7 @@
                             <div style="flex: 3; min-width: 300px;">
                                 <table><thead><tr><th>Name</th><th style="text-align:center;">P</th><th style="text-align:center;">A</th></tr></thead><tbody id="attList"></tbody></table>
                             </div>
+                            <!-- Admin Only Submit Button -->
                             <button id="submit-att-btn" onclick="submitAttendance()" style="flex: 1; background: var(--green); padding: 30px; font-size: 20px; border-radius: 12px; min-width: 200px;">Submit</button>
                         </div>
                     </div>
@@ -114,6 +138,7 @@
                     </div>
                 </div>
 
+                <!-- Fees Section -->
                 <div id="section-fees" class="section">
                     <div class="card">
                         <h3>Fees Tracker</h3>
@@ -123,17 +148,30 @@
             </div>
         </div>
 
+        <!-- Profile Section -->
         <div id="view-profile" class="hidden">
             <div class="container">
                 <div class="card" style="text-align: center;">
                     <img id="userImg" style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--accent); margin-bottom: 10px;">
                     <h2 id="userNameDisplay"></h2>
+                    <p id="userRoleDisplay" style="color: var(--accent); font-weight: bold; margin-top: -10px; margin-bottom: 20px;"></p>
                     <button onclick="handleLogout()" style="background: var(--red); color: white; width: 100%;">Logout Account</button>
                 </div>
-                <div class="card">
+
+                <!-- Admin Only: Add Co-Admin -->
+                <div class="card" id="adminPromotionCard">
+                    <h3 style="color: var(--green);">Make Someone Admin</h3>
+                    <p style="font-size: 13px; opacity: 0.7;">Enter the Gmail address of the person you want to make an admin.</p>
+                    <input type="email" id="newAdminEmail" placeholder="user@gmail.com" style="width: 60%;">
+                    <button onclick="promoteToAdmin()">Make Admin</button>
+                </div>
+
+                <!-- Admin Only: Remove Students -->
+                <div class="card" id="removeStudentsCard">
                     <h3>Remove Students</h3>
                     <div id="removalList">Loading...</div>
                 </div>
+
                 <div class="card">
                     <h3>Batch Join Codes</h3>
                     <div id="profileGroupList"></div>
@@ -161,27 +199,62 @@
         const db = firebase.firestore();
 
         let activeGroupID = null;
+        let currentUserData = null; // Stores name and email
+        let isAdmin = false; // Tracks RBAC status for current active group
+
         document.getElementById('currentDateDisplay').innerText = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
 
+        // VERIFICATION & NAME GATE
         auth.onAuthStateChanged(async (user) => {
             if (user) {
                 document.getElementById('view-auth').classList.add('hidden');
-                document.getElementById('userNameDisplay').innerText = user.displayName;
-                if(user.photoURL) document.getElementById('userImg').src = user.photoURL;
-                loadUserGroups(); 
+                
+                // Check if user has a profile name saved
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                if (userDoc.exists) {
+                    currentUserData = userDoc.data();
+                    document.getElementById('userNameDisplay').innerText = currentUserData.name;
+                    if(user.photoURL) document.getElementById('userImg').src = user.photoURL;
+                    loadUserGroups(); 
+                } else {
+                    // NEW USER: Ask for Name
+                    document.getElementById('view-setup').classList.add('hidden');
+                    document.getElementById('main-ui').classList.add('hidden');
+                    document.getElementById('view-name-setup').classList.remove('hidden');
+                }
             } else {
                 document.getElementById('view-auth').classList.remove('hidden');
                 document.getElementById('view-setup').classList.add('hidden');
                 document.getElementById('main-ui').classList.add('hidden');
+                document.getElementById('view-name-setup').classList.add('hidden');
             }
         });
+
+        async function saveNewUserName() {
+            const enteredName = document.getElementById('userNameInput').value.trim();
+            if(!enteredName) return alert("Please enter your name!");
+
+            await db.collection('users').doc(auth.currentUser.uid).set({
+                name: enteredName,
+                email: auth.currentUser.email
+            });
+
+            currentUserData = { name: enteredName, email: auth.currentUser.email };
+            document.getElementById('userNameDisplay').innerText = enteredName;
+            if(auth.currentUser.photoURL) document.getElementById('userImg').src = auth.currentUser.photoURL;
+            
+            document.getElementById('view-name-setup').classList.add('hidden');
+            loadUserGroups();
+        }
 
         async function loadUserGroups() {
             const snapshot = await db.collection('members').where('uid', '==', auth.currentUser.uid).get();
             const groupList = document.getElementById('groupListContainer');
             const profileList = document.getElementById('profileGroupList');
             groupList.innerHTML = ""; profileList.innerHTML = "";
+
             if (snapshot.empty && !activeGroupID) { document.getElementById('view-setup').classList.remove('hidden'); return; }
+
             snapshot.forEach(async (memberDoc) => {
                 const groupDoc = await db.collection('groups').doc(memberDoc.data().groupId).get();
                 const data = groupDoc.data();
@@ -195,7 +268,13 @@
             const name = document.getElementById('newGroupName').value;
             if(!name) return alert("Batch name required!");
             const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-            const groupRef = await db.collection('groups').add({ name, code, owner: auth.currentUser.uid });
+            
+            // Creator is automatically added to the admins array
+            const groupRef = await db.collection('groups').add({ 
+                name, 
+                code, 
+                admins: [auth.currentUser.email] 
+            });
             await db.collection('members').add({ uid: auth.currentUser.uid, groupId: groupRef.id });
             location.reload();
         }
@@ -208,9 +287,35 @@
             location.reload();
         }
 
+        // ENTRY & ROLE VERIFICATION
         async function enterGroup(id, name) {
             activeGroupID = id;
             document.getElementById('activeGroupName').innerText = name;
+            
+            // Check Role
+            const groupDoc = await db.collection('groups').doc(id).get();
+            const adminArray = groupDoc.data().admins || [];
+            isAdmin = adminArray.includes(auth.currentUser.email);
+
+            // Apply Role UI Locks
+            if (isAdmin) {
+                document.getElementById('registerCard').classList.remove('hidden');
+                document.getElementById('submit-att-btn').classList.remove('hidden');
+                document.getElementById('removeStudentsCard').classList.remove('hidden');
+                document.getElementById('adminPromotionCard').classList.remove('hidden');
+                
+                document.getElementById('adminBadge').innerText = `Batch Admin: ${currentUserData.name}`;
+                document.getElementById('adminBadge').classList.remove('hidden');
+                document.getElementById('userRoleDisplay').innerText = "Role: Admin";
+            } else {
+                document.getElementById('registerCard').classList.add('hidden');
+                document.getElementById('submit-att-btn').classList.add('hidden');
+                document.getElementById('removeStudentsCard').classList.add('hidden');
+                document.getElementById('adminPromotionCard').classList.add('hidden');
+                document.getElementById('adminBadge').classList.add('hidden');
+                document.getElementById('userRoleDisplay').innerText = "Role: Student / Member";
+            }
+
             document.getElementById('view-setup').classList.add('hidden');
             document.getElementById('main-ui').classList.remove('hidden');
             
@@ -227,11 +332,11 @@
                                      .where('groupId', '==', activeGroupID)
                                      .where('date', '==', today)
                                      .get();
-            if (!snapshot.empty) {
+            if (!snapshot.empty && isAdmin) {
                 btn.innerText = "Submitted";
                 btn.style.background = "#333";
                 btn.disabled = true;
-            } else {
+            } else if (isAdmin) {
                 btn.innerText = "Submit";
                 btn.style.background = "var(--green)";
                 btn.disabled = false;
@@ -240,11 +345,8 @@
 
         async function loadData() {
             const today = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
-            const attCheck = await db.collection('attendance')
-                                     .where('groupId', '==', activeGroupID)
-                                     .where('date', '==', today)
-                                     .get();
-            const isLocked = !attCheck.empty;
+            const attCheck = await db.collection('attendance').where('groupId', '==', activeGroupID).where('date', '==', today).get();
+            const isLockedForAdmin = !attCheck.empty;
 
             const snapshot = await db.collection('students').where('groupId', '==', activeGroupID).get();
             const home = document.getElementById('homeList');
@@ -260,14 +362,33 @@
                 
                 home.innerHTML += `<tr><td>${s.name}</td><td>${s.class}</td><td>${displayDate}</td></tr>`;
                 
-                const disabledAttr = isLocked ? "disabled" : "";
+                // Attendance View: Admins get toggles (if not submitted). Members get disabled toggles purely for visual structure.
+                const disabledAttr = (isAdmin && !isLockedForAdmin) ? "" : "disabled";
                 att.innerHTML += `<tr><td>${s.name}</td>
                     <td style="text-align:center;"><input type="radio" name="at-${id}" id="p-${id}" ${disabledAttr}></td>
                     <td style="text-align:center;"><input type="radio" name="at-${id}" id="a-${id}" ${disabledAttr}></td></tr>`;
                 
-                fees.innerHTML += `<tr><td>${s.name}</td><td id="f-cont-${id}"><input type="radio" name="p-${id}" id="pd-${id}" onclick="toggleDateInput('${id}')"><label for="pd-${id}">Paid</label> <input type="radio" name="p-${id}" id="pn-${id}" checked><label for="pn-${id}">Pending</label></td></tr>`;
-                rem.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #333;"><span>${s.name}</span><button onclick="deleteStudent('${id}')" style="background:var(--red); color:white; padding:5px 12px; font-size:12px;">Remove</button></div>`;
+                // Fees View: Admins get interactive toggles. Members just get text.
+                if (isAdmin) {
+                    fees.innerHTML += `<tr><td>${s.name}</td><td id="f-cont-${id}"><input type="radio" name="p-${id}" id="pd-${id}" onclick="toggleDateInput('${id}')"><label for="pd-${id}">Paid</label> <input type="radio" name="p-${id}" id="pn-${id}" checked><label for="pn-${id}">Pending</label></td></tr>`;
+                    rem.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #333;"><span>${s.name}</span><button onclick="deleteStudent('${id}')" style="background:var(--red); color:white; padding:5px 12px; font-size:12px;">Remove</button></div>`;
+                } else {
+                    fees.innerHTML += `<tr><td>${s.name}</td><td><span style="color: #888; font-style: italic;">Tracked by Admin</span></td></tr>`;
+                }
             });
+        }
+
+        async function promoteToAdmin() {
+            const emailInput = document.getElementById('newAdminEmail');
+            const email = emailInput.value.trim().toLowerCase();
+            if(!email) return alert("Enter an email address.");
+
+            await db.collection('groups').doc(activeGroupID).update({
+                admins: firebase.firestore.FieldValue.arrayUnion(email)
+            });
+
+            alert(email + " has been promoted to Admin for this batch!");
+            emailInput.value = "";
         }
 
         async function deleteStudent(id) {
@@ -320,29 +441,18 @@
             alert("Attendance recorded!");
         }
 
-        // THE BULLETPROOF FIX: Removed orderBy from Firebase query to bypass the index requirement
         async function loadAttendanceHistory() {
             const logDiv = document.getElementById('historyLogs');
-            
             try {
-                // Fetch normally without orderBy
-                const snapshot = await db.collection('attendance')
-                                         .where('groupId', '==', activeGroupID)
-                                         .get();
-                
-                if(snapshot.empty) { 
-                    logDiv.innerHTML = "No attendance history yet."; 
-                    return; 
-                }
+                const snapshot = await db.collection('attendance').where('groupId', '==', activeGroupID).get();
+                if(snapshot.empty) { logDiv.innerHTML = "No attendance history yet."; return; }
 
-                // Sort the data in the browser instead of relying on Firebase
                 let historyData = [];
                 snapshot.forEach(doc => historyData.push(doc.data()));
-
                 historyData.sort((a, b) => {
                     let timeA = a.timestamp ? a.timestamp.toMillis() : Date.now();
                     let timeB = b.timestamp ? b.timestamp.toMillis() : Date.now();
-                    return timeB - timeA; // Descending order (newest first)
+                    return timeB - timeA;
                 });
 
                 logDiv.innerHTML = "";
@@ -355,7 +465,7 @@
                     logDiv.innerHTML += html + `</div>`;
                 });
             } catch (error) {
-                console.error("Error loading history:", error);
+                console.error(error);
                 logDiv.innerHTML = "Failed to load history.";
             }
         }
@@ -384,9 +494,7 @@
             regBtn.innerText = "Registering...";
 
             try {
-                await db.collection('students').add({
-                    name, class: cls, admissionDate: date, groupId: activeGroupID
-                });
+                await db.collection('students').add({ name, class: cls, admissionDate: date, groupId: activeGroupID });
                 nameInput.value = ""; classInput.value = ""; dateInput.value = "";
                 loadData();
             } catch (e) {
