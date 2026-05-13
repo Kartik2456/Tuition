@@ -1,0 +1,16 @@
+{
+  "name": "Tuition Hub",
+  "short_name": "Tuition Hub",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#1f1b24",
+  "description": "Tuition Management Dashboard",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+    ]
+}
