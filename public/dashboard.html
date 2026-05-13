@@ -153,7 +153,7 @@
 
                 <div class="card" id="adminPromotionCard">
                     <h3 style="color: var(--green);">Make Someone Admin</h3>
-                    <p style="font-size: 13px; opacity: 0.7;">Enter the Gmail address of the person you want to make an admin.</p>
+                    <p style="font-size: 13px; opacity: 0.7;">Enter the Gmail address of a member to make them an admin.</p>
                     <input type="email" id="newAdminEmail" placeholder="user@gmail.com" style="width: 60%;">
                     <button onclick="promoteToAdmin()">Make Admin</button>
                 </div>
@@ -224,10 +224,10 @@
 
             await db.collection('users').doc(auth.currentUser.uid).set({
                 name: enteredName,
-                email: auth.currentUser.email
+                email: auth.currentUser.email.toLowerCase()
             });
 
-            currentUserData = { name: enteredName, email: auth.currentUser.email };
+            currentUserData = { name: enteredName, email: auth.currentUser.email.toLowerCase() };
             document.getElementById('userNameDisplay').innerText = enteredName;
             if(auth.currentUser.photoURL) document.getElementById('userImg').src = auth.currentUser.photoURL;
             
@@ -258,7 +258,7 @@
             const code = Math.random().toString(36).substring(2, 8).toUpperCase();
             
             const groupRef = await db.collection('groups').add({ 
-                name, code, admins: [auth.currentUser.email] 
+                name, code, admins: [auth.currentUser.email.toLowerCase()] 
             });
             await db.collection('members').add({ uid: auth.currentUser.uid, groupId: groupRef.id });
             location.reload();
@@ -278,20 +278,19 @@
             
             const groupDoc = await db.collection('groups').doc(id).get();
             const adminArray = groupDoc.data().admins || [];
-            isAdmin = adminArray.includes(auth.currentUser.email);
+            isAdmin = adminArray.includes(auth.currentUser.email.toLowerCase());
 
-            // Fetch names of all admins
-            let adminNames = [];
+            // FIX 1: Fetch names and use a Set to remove any duplicates automatically
+            let adminNames = new Set();
             if (adminArray.length > 0) {
                 try {
-                    const promises = adminArray.map(email => db.collection('users').where('email', '==', email).get());
+                    const promises = adminArray.map(email => db.collection('users').where('email', '==', email.toLowerCase()).get());
                     const snaps = await Promise.all(promises);
                     snaps.forEach((snap, index) => {
                         if (!snap.empty) {
-                            adminNames.push(snap.docs[0].data().name);
+                            adminNames.add(snap.docs[0].data().name); // Add true profile name
                         } else {
-                            // Fallback to email prefix if user hasn't set up their profile yet
-                            adminNames.push(adminArray[index].split('@')[0]); 
+                            adminNames.add(adminArray[index].split('@')[0]); // Fallback
                         }
                     });
                 } catch(error) {
@@ -299,15 +298,16 @@
                 }
             }
 
+            const uniqueAdmins = Array.from(adminNames); // Converts the clean Set back into an array
+
             if (isAdmin) {
                 document.getElementById('registerCard').classList.remove('hidden');
                 document.getElementById('submit-att-btn').classList.remove('hidden');
                 document.getElementById('removeStudentsCard').classList.remove('hidden');
                 document.getElementById('adminPromotionCard').classList.remove('hidden');
                 
-                // Set the badge to show all admins
-                const badgePrefix = adminNames.length > 1 ? "Batch Admins" : "Batch Admin";
-                document.getElementById('adminBadge').innerText = `${badgePrefix}: ${adminNames.join(', ')}`;
+                const badgePrefix = uniqueAdmins.length > 1 ? "Batch Admins" : "Batch Admin";
+                document.getElementById('adminBadge').innerText = `${badgePrefix}: ${uniqueAdmins.join(', ')}`;
                 document.getElementById('adminBadge').classList.remove('hidden');
                 document.getElementById('userRoleDisplay').innerText = "Role: Admin";
             } else {
@@ -373,18 +373,40 @@
             });
         }
 
+        // FIX 2: Strict Validation for Admin Promotion
         async function promoteToAdmin() {
             const emailInput = document.getElementById('newAdminEmail');
             const email = emailInput.value.trim().toLowerCase();
             if(!email) return alert("Enter an email address.");
 
+            // Check if user exists in the app at all
+            const userQuery = await db.collection('users').where('email', '==', email).get();
+            if (userQuery.empty) {
+                return alert("User not found! They need to log into Tuition Hub first.");
+            }
+            
+            const targetUID = userQuery.docs[0].id;
+
+            // Check if they are actually a member of this specific batch
+            const memberQuery = await db.collection('members')
+                .where('uid', '==', targetUID)
+                .where('groupId', '==', activeGroupID)
+                .get();
+
+            if (memberQuery.empty) {
+                return alert("This person must join the batch using the Invite Code before they can be made an admin.");
+            }
+
+            // Passed checks, add to admins array
             await db.collection('groups').doc(activeGroupID).update({
                 admins: firebase.firestore.FieldValue.arrayUnion(email)
             });
 
-            alert(email + " has been promoted to Admin for this batch!");
+            alert(email + " has been successfully promoted to Admin!");
             emailInput.value = "";
-            location.reload(); // Reload to refresh the badge text
+            
+            // Refresh the view dynamically so the badge updates
+            enterGroup(activeGroupID, document.getElementById('activeGroupName').innerText);
         }
 
         async function deleteStudent(id) {
@@ -508,7 +530,7 @@
             document.getElementById('view-home').classList.toggle('hidden', v !== 'home');
             document.getElementById('view-profile').classList.toggle('hidden', v !== 'profile');
             document.getElementById('bot-home').classList.toggle('active', v === 'home');
-            document.getElementById('bot-profile').toggle('active', v === 'profile');
+            document.getElementById('bot-profile').classList.toggle('active', v === 'profile');
             if(v === 'profile') loadData(); 
         }
     </script>
