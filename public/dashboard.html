@@ -158,6 +158,14 @@
                     <button onclick="promoteToAdmin()">Make Admin</button>
                 </div>
 
+                <!-- NEW REMOVE ADMIN CARD -->
+                <div class="card" id="adminDemotionCard">
+                    <h3 style="color: var(--red);">Remove Admin</h3>
+                    <p style="font-size: 13px; opacity: 0.7;">Enter the Gmail address of the admin you want to remove.</p>
+                    <input type="email" id="removeAdminEmail" placeholder="user@gmail.com" style="width: 60%;">
+                    <button onclick="demoteAdmin()" style="background: var(--red); color: white;">Remove Admin</button>
+                </div>
+
                 <div class="card" id="removeStudentsCard">
                     <h3>Remove Students</h3>
                     <div id="removalList">Loading...</div>
@@ -279,37 +287,23 @@
             const groupDoc = await db.collection('groups').doc(id).get();
             const adminArray = groupDoc.data().admins || [];
             
-            // Normalize current user email for safe checking
             const currentEmail = auth.currentUser.email.toLowerCase();
             isAdmin = adminArray.includes(currentEmail);
 
-            // FIX: Strong mapping to prevent "forgenext.offical" and "Kool" from duplicating
             let adminNames = new Set();
             
             if (adminArray.length > 0) {
                 try {
                     const promises = adminArray.map(async (email) => {
                         const checkEmail = email.toLowerCase();
-                        
-                        // If the admin email matches the CURRENT user, force use their known Name
-                        if (checkEmail === currentEmail && currentUserData) {
-                            return currentUserData.name;
-                        }
-                        
-                        // Otherwise, query the database for their profile
+                        if (checkEmail === currentEmail && currentUserData) return currentUserData.name;
                         const snap = await db.collection('users').where('email', '==', checkEmail).get();
-                        if (!snap.empty) {
-                            return snap.docs[0].data().name;
-                        } else {
-                            // If it's a dirty manual entry in the database from testing, just use it directly
-                            return checkEmail.includes('@') ? checkEmail.split('@')[0] : checkEmail;
-                        }
+                        if (!snap.empty) return snap.docs[0].data().name;
+                        return checkEmail.includes('@') ? checkEmail.split('@')[0] : checkEmail;
                     });
                     
                     const names = await Promise.all(promises);
-                    names.forEach(n => {
-                        if (n) adminNames.add(n); // The Set automatically absorbs duplicates!
-                    });
+                    names.forEach(n => { if (n) adminNames.add(n); });
                 } catch(error) {
                     console.error("Failed fetching admin names", error);
                 }
@@ -322,6 +316,7 @@
                 document.getElementById('submit-att-btn').classList.remove('hidden');
                 document.getElementById('removeStudentsCard').classList.remove('hidden');
                 document.getElementById('adminPromotionCard').classList.remove('hidden');
+                document.getElementById('adminDemotionCard').classList.remove('hidden'); // Show Remove Admin
                 
                 const badgePrefix = uniqueAdmins.length > 1 ? "Batch Admins" : "Batch Admin";
                 document.getElementById('adminBadge').innerText = `${badgePrefix}: ${uniqueAdmins.join(', ')}`;
@@ -332,6 +327,7 @@
                 document.getElementById('submit-att-btn').classList.add('hidden');
                 document.getElementById('removeStudentsCard').classList.add('hidden');
                 document.getElementById('adminPromotionCard').classList.add('hidden');
+                document.getElementById('adminDemotionCard').classList.add('hidden'); // Hide Remove Admin
                 document.getElementById('adminBadge').classList.add('hidden');
                 document.getElementById('userRoleDisplay').innerText = "Role: Student / Member";
             }
@@ -396,20 +392,11 @@
             if(!email) return alert("Enter an email address.");
 
             const userQuery = await db.collection('users').where('email', '==', email).get();
-            if (userQuery.empty) {
-                return alert("User not found! They need to log into Tuition Hub first.");
-            }
+            if (userQuery.empty) return alert("User not found! They need to log into Tuition Hub first.");
             
             const targetUID = userQuery.docs[0].id;
-
-            const memberQuery = await db.collection('members')
-                .where('uid', '==', targetUID)
-                .where('groupId', '==', activeGroupID)
-                .get();
-
-            if (memberQuery.empty) {
-                return alert("This person must join the batch using the Invite Code before they can be made an admin.");
-            }
+            const memberQuery = await db.collection('members').where('uid', '==', targetUID).where('groupId', '==', activeGroupID).get();
+            if (memberQuery.empty) return alert("This person must join the batch using the Invite Code before they can be made an admin.");
 
             await db.collection('groups').doc(activeGroupID).update({
                 admins: firebase.firestore.FieldValue.arrayUnion(email)
@@ -417,7 +404,35 @@
 
             alert(email + " has been successfully promoted to Admin!");
             emailInput.value = "";
+            enterGroup(activeGroupID, document.getElementById('activeGroupName').innerText);
+        }
+
+        // NEW FEATURE: Remove Admin
+        async function demoteAdmin() {
+            const emailInput = document.getElementById('removeAdminEmail');
+            const email = emailInput.value.trim().toLowerCase();
+            if(!email) return alert("Enter an email address.");
+
+            // Safety Guard: Prevent users from removing themselves
+            if(email === auth.currentUser.email.toLowerCase()) {
+                return alert("Action denied: You cannot remove yourself from the admin list.");
+            }
+
+            const groupDoc = await db.collection('groups').doc(activeGroupID).get();
+            const currentAdmins = groupDoc.data().admins || [];
+
+            if(!currentAdmins.includes(email)) {
+                return alert("This user is not currently an admin for this batch.");
+            }
+
+            await db.collection('groups').doc(activeGroupID).update({
+                admins: firebase.firestore.FieldValue.arrayRemove(email)
+            });
+
+            alert(email + " has been removed from Admins.");
+            emailInput.value = "";
             
+            // Refresh to update the badge immediately
             enterGroup(activeGroupID, document.getElementById('activeGroupName').innerText);
         }
 
