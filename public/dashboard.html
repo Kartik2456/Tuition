@@ -316,35 +316,48 @@
             const btn = document.getElementById('submit-att-btn');
             btn.innerText = "Submitted"; btn.style.background = "#333"; btn.disabled = true;
             
-            // THE FIX: Wait slightly for database then load history
             setTimeout(() => { loadAttendanceHistory(); }, 500);
             alert("Attendance recorded!");
         }
 
+        // THE BULLETPROOF FIX: Removed orderBy from Firebase query to bypass the index requirement
         async function loadAttendanceHistory() {
             const logDiv = document.getElementById('historyLogs');
-            const snapshot = await db.collection('attendance')
-                                     .where('groupId', '==', activeGroupID)
-                                     .orderBy('timestamp', 'desc')
-                                     .get();
             
-            // Clear the "No attendance history" message
-            logDiv.innerHTML = "";
+            try {
+                // Fetch normally without orderBy
+                const snapshot = await db.collection('attendance')
+                                         .where('groupId', '==', activeGroupID)
+                                         .get();
+                
+                if(snapshot.empty) { 
+                    logDiv.innerHTML = "No attendance history yet."; 
+                    return; 
+                }
 
-            if(snapshot.empty) { 
-                logDiv.innerHTML = "No attendance history yet."; 
-                return; 
-            }
-            
-            snapshot.forEach(doc => {
-                const d = doc.data();
-                let html = `<div class="history-card"><strong>${d.date}</strong><hr style="border:0.5px solid #444; margin:8px 0;">`;
-                d.records.forEach(r => {
-                    const color = r.status === 'Present' ? 'var(--green)' : (r.status === 'Absent' ? 'var(--red)' : '#888');
-                    html += `<div>${r.name}: <span style="color:${color}">${r.status}</span></div>`;
+                // Sort the data in the browser instead of relying on Firebase
+                let historyData = [];
+                snapshot.forEach(doc => historyData.push(doc.data()));
+
+                historyData.sort((a, b) => {
+                    let timeA = a.timestamp ? a.timestamp.toMillis() : Date.now();
+                    let timeB = b.timestamp ? b.timestamp.toMillis() : Date.now();
+                    return timeB - timeA; // Descending order (newest first)
                 });
-                logDiv.innerHTML += html + `</div>`;
-            });
+
+                logDiv.innerHTML = "";
+                historyData.forEach(d => {
+                    let html = `<div class="history-card"><strong>${d.date}</strong><hr style="border:0.5px solid #444; margin:8px 0;">`;
+                    d.records.forEach(r => {
+                        const color = r.status === 'Present' ? 'var(--green)' : (r.status === 'Absent' ? 'var(--red)' : '#888');
+                        html += `<div>${r.name}: <span style="color:${color}">${r.status}</span></div>`;
+                    });
+                    logDiv.innerHTML += html + `</div>`;
+                });
+            } catch (error) {
+                console.error("Error loading history:", error);
+                logDiv.innerHTML = "Failed to load history.";
+            }
         }
 
         function switchAttBranch(b) {
