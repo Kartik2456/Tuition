@@ -33,7 +33,7 @@
         .group-card { background: #252525; padding: 15px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid var(--accent); cursor: pointer; transition: 0.2s; }
         .group-card:hover { background: #2d2d2d; transform: scale(1.01); }
 
-        input, button { background: #2c2c2c; border: 1px solid #444; color: white; padding: 10px; border-radius: 6px; margin: 5px; }
+        input, select, button { background: #2c2c2c; border: 1px solid #444; color: white; padding: 10px; border-radius: 6px; margin: 5px; }
         input[type="radio"] { transform: scale(1.8); cursor: pointer; accent-color: var(--accent); margin-right: 8px; vertical-align: middle; }
         label { margin-right: 25px; cursor: pointer; } 
         
@@ -49,7 +49,6 @@
 </head>
 <body>
 
-    <!-- LOGIN GATE -->
     <div id="view-auth" class="hidden" style="display: flex; justify-content: center; align-items: center; height: 100vh;">
         <div class="card" style="text-align: center; width: 320px;">
             <h1 style="color: var(--accent);">Tuition Hub</h1>
@@ -57,7 +56,6 @@
         </div>
     </div>
 
-    <!-- NAME SETUP -->
     <div id="view-name-setup" class="hidden" style="display: flex; justify-content: center; align-items: center; height: 100vh;">
         <div class="card" style="text-align: center; width: 350px;">
             <h2 style="color: var(--accent);">Welcome!</h2>
@@ -67,7 +65,6 @@
         </div>
     </div>
 
-    <!-- GROUP SELECTOR -->
     <div id="view-setup" class="hidden">
         <div class="container">
             <h2 style="color: var(--accent);">Your Batches</h2>
@@ -83,7 +80,6 @@
         </div>
     </div>
 
-    <!-- MAIN DASHBOARD -->
     <div id="main-ui" class="hidden">
         <div id="view-home">
             <div class="navbar">
@@ -101,14 +97,32 @@
                     <div class="card" id="registerCard">
                         <h3>Register Student</h3>
                         <input type="text" id="s-name" placeholder="Name">
-                        <input type="number" id="s-class" placeholder="Class">
+                        
+                        <!-- FIX 1: Dropdown for Class -->
+                        <select id="s-class">
+                            <option value="" disabled selected>Select Class</option>
+                            <option value="Nursery">Nursery</option>
+                            <option value="LKG">LKG</option>
+                            <option value="UKG">UKG</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                            <option value="11">11</option>
+                            <option value="12">12</option>
+                        </select>
+
                         <input type="date" id="s-date">
                         <button onclick="addStudent()">Register</button>
                     </div>
 
-                    <div id="adminBadge" style="text-align: center; color: var(--green); font-weight: bold; font-size: 18px; margin-bottom: 20px; padding: 10px; background: #1a1a1a; border-radius: 8px; border: 1px dashed var(--green);" class="hidden">
-                        <!-- Names injected here -->
-                    </div>
+                    <div id="adminBadge" style="text-align: center; color: var(--green); font-weight: bold; font-size: 18px; margin-bottom: 20px; padding: 10px; background: #1a1a1a; border-radius: 8px; border: 1px dashed var(--green);" class="hidden"></div>
 
                     <div class="card">
                         <table><thead><tr><th>Name</th><th>Class</th><th>Date</th></tr></thead><tbody id="homeList"></tbody></table>
@@ -151,7 +165,6 @@
                     <button onclick="handleLogout()" style="background: var(--red); color: white; width: 100%;">Logout Account</button>
                 </div>
 
-                <!-- NEW: Admin List Card -->
                 <div class="card" id="adminListCard">
                     <h3 style="color: var(--accent);">Current Admins</h3>
                     <div id="adminListDisplay">Loading admins...</div>
@@ -176,8 +189,9 @@
                     <div id="removalList">Loading...</div>
                 </div>
 
+                <!-- Profile Batch List with Leave Buttons -->
                 <div class="card">
-                    <h3>Batch Join Codes</h3>
+                    <h3>My Batches</h3>
                     <div id="profileGroupList"></div>
                 </div>
             </div>
@@ -258,9 +272,22 @@
 
             snapshot.forEach(async (memberDoc) => {
                 const groupDoc = await db.collection('groups').doc(memberDoc.data().groupId).get();
-                const data = groupDoc.data();
-                const card = `<div class="group-card" onclick="enterGroup('${groupDoc.id}', '${data.name}')"><span>${data.name}</span><small style="color: var(--accent);">CODE: ${data.code}</small></div>`;
-                groupList.innerHTML += card; profileList.innerHTML += card;
+                if (groupDoc.exists) {
+                    const data = groupDoc.data();
+                    
+                    // Setup Screen Card (Clicking enters the group)
+                    groupList.innerHTML += `<div class="group-card" onclick="enterGroup('${groupDoc.id}', '${data.name}')"><span>${data.name}</span><small style="color: var(--accent);">CODE: ${data.code}</small></div>`;
+                    
+                    // FIX 2: Profile Screen Card (Includes the Leave Group button)
+                    profileList.innerHTML += `
+                        <div class="group-card" style="cursor: default;">
+                            <div onclick="enterGroup('${groupDoc.id}', '${data.name}')" style="flex:1; cursor:pointer;">
+                                <span>${data.name}</span>
+                                <small style="color: var(--accent); margin-left: 10px;">CODE: ${data.code}</small>
+                            </div>
+                            <button onclick="leaveGroup('${groupDoc.id}', '${memberDoc.id}', '${data.name}')" style="background:var(--red); color:white; padding:5px 10px; margin:0; font-size:12px;">Leave</button>
+                        </div>`;
+                }
             });
             if (!activeGroupID) document.getElementById('view-setup').classList.remove('hidden');
         }
@@ -281,8 +308,40 @@
             const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
             const snapshot = await db.collection('groups').where('code', '==', code).get();
             if(snapshot.empty) return alert("Invalid Code!");
+            
+            // Check if already in group
+            const checkMem = await db.collection('members').where('uid', '==', auth.currentUser.uid).where('groupId', '==', snapshot.docs[0].id).get();
+            if(!checkMem.empty) return alert("You are already in this batch!");
+
             await db.collection('members').add({ uid: auth.currentUser.uid, groupId: snapshot.docs[0].id });
             location.reload();
+        }
+
+        // NEW LEAVE GROUP LOGIC
+        async function leaveGroup(groupId, memberDocId, groupName) {
+            if (confirm(`Are you sure you want to leave the group "${groupName}"?`)) {
+                try {
+                    // Remove member document
+                    await db.collection('members').doc(memberDocId).delete();
+                    
+                    // Clean admin array just in case the leaving user was an admin
+                    await db.collection('groups').doc(groupId).update({
+                        admins: firebase.firestore.FieldValue.arrayRemove(auth.currentUser.email.toLowerCase())
+                    });
+
+                    alert(`You have left ${groupName}.`);
+
+                    // If they are leaving the group they are currently viewing, back out to setup
+                    if (activeGroupID === groupId) {
+                        exitGroup();
+                    } else {
+                        loadUserGroups(); // Refresh UI
+                    }
+                } catch (e) {
+                    console.error("Error leaving group:", e);
+                    alert("Failed to leave group.");
+                }
+            }
         }
 
         async function enterGroup(id, name) {
@@ -295,7 +354,6 @@
             const currentEmail = auth.currentUser.email.toLowerCase();
             isAdmin = adminArray.includes(currentEmail);
 
-            // FIX: Use a Map to store {email: name} relationships uniquely
             let adminsMap = new Map();
             
             if (adminArray.length > 0) {
@@ -316,9 +374,7 @@
                     });
                     
                     const results = await Promise.all(promises);
-                    results.forEach(res => {
-                        adminsMap.set(res.email, res.name); // Automatically prevents duplicates
-                    });
+                    results.forEach(res => { adminsMap.set(res.email, res.name); });
                 } catch(error) {
                     console.error("Failed fetching admin names", error);
                 }
@@ -332,14 +388,13 @@
                 document.getElementById('removeStudentsCard').classList.remove('hidden');
                 document.getElementById('adminPromotionCard').classList.remove('hidden');
                 document.getElementById('adminDemotionCard').classList.remove('hidden'); 
-                document.getElementById('adminListCard').classList.remove('hidden'); // Show List
+                document.getElementById('adminListCard').classList.remove('hidden'); 
                 
                 const badgePrefix = uniqueAdmins.length > 1 ? "Batch Admins" : "Batch Admin";
                 document.getElementById('adminBadge').innerText = `${badgePrefix}: ${uniqueAdmins.join(', ')}`;
                 document.getElementById('adminBadge').classList.remove('hidden');
                 document.getElementById('userRoleDisplay').innerText = "Role: Admin";
 
-                // Populate the Admin List display
                 const adminListDisplay = document.getElementById('adminListDisplay');
                 adminListDisplay.innerHTML = "";
                 adminsMap.forEach((nameVal, emailKey) => {
@@ -356,7 +411,7 @@
                 document.getElementById('removeStudentsCard').classList.add('hidden');
                 document.getElementById('adminPromotionCard').classList.add('hidden');
                 document.getElementById('adminDemotionCard').classList.add('hidden');
-                document.getElementById('adminListCard').classList.add('hidden'); // Hide List
+                document.getElementById('adminListCard').classList.add('hidden'); 
                 document.getElementById('adminBadge').classList.add('hidden');
                 document.getElementById('userRoleDisplay').innerText = "Role: Student / Member";
             }
@@ -448,9 +503,7 @@
             const groupDoc = await db.collection('groups').doc(activeGroupID).get();
             const currentAdmins = groupDoc.data().admins || [];
 
-            if(!currentAdmins.includes(email)) {
-                return alert("This user is not currently an admin for this batch.");
-            }
+            if(!currentAdmins.includes(email)) return alert("This user is not currently an admin for this batch.");
 
             await db.collection('groups').doc(activeGroupID).update({
                 admins: firebase.firestore.FieldValue.arrayRemove(email)
@@ -545,7 +598,7 @@
 
         async function addStudent() {
             const nameInput = document.getElementById('s-name');
-            const classInput = document.getElementById('s-class');
+            const classInput = document.getElementById('s-class'); // Now reads from select
             const dateInput = document.getElementById('s-date');
             const regBtn = event.target;
 
