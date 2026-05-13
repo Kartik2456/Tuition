@@ -112,7 +112,7 @@
                 <div class="nav-item active" id="tab-students" onclick="showSection('students')">Students</div>
                 <div class="nav-item" id="tab-attendance" onclick="showSection('attendance')">Attendance</div>
                 <div class="nav-item" id="tab-fees" onclick="showSection('fees')">Fees Status</div>
-                <div class="nav-item" style="color: var(--red);" onclick="exitGroup()">Switch Batch</div>
+                <!-- Removed Switch Batch from here -->
             </div>
 
             <div class="container">
@@ -149,7 +149,6 @@
 
                     <div class="card">
                         <table>
-                            <!-- Roll Number added to table header -->
                             <thead><tr><th>Roll</th><th>Name</th><th>Class</th><th>Date</th></tr></thead>
                             <tbody id="homeList"></tbody>
                         </table>
@@ -165,7 +164,6 @@
                         <div class="card" style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
                             <div style="flex: 3; min-width: 300px;">
                                 <table>
-                                    <!-- Roll Number added to table header -->
                                     <thead><tr><th>Roll</th><th>Name</th><th style="text-align:center;">P</th><th style="text-align:center;">A</th></tr></thead>
                                     <tbody id="attList"></tbody>
                                 </table>
@@ -188,7 +186,6 @@
                         <div class="fees-content">
                             <h3 id="currentMonthHeader" style="margin-top: 0; color: var(--accent);">Fees Status</h3>
                             <table>
-                                <!-- Roll Number added to table header -->
                                 <thead><tr><th>Roll</th><th>Name</th><th>Status</th></tr></thead>
                                 <tbody id="feesList"></tbody>
                             </table>
@@ -205,6 +202,9 @@
                     <img id="userImg" style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--accent); margin-bottom: 10px;">
                     <h2 id="userNameDisplay"></h2>
                     <p id="userRoleDisplay" style="color: var(--accent); font-weight: bold; margin-top: -10px; margin-bottom: 20px;"></p>
+                    
+                    <!-- Moved Switch Batch Button Here -->
+                    <button onclick="exitGroup()" style="background: #332940; color: white; border: 1px solid var(--accent); width: 100%; margin-bottom: 15px;">Switch Batch</button>
                     <button onclick="handleLogout()" style="background: var(--red); color: white; width: 100%;">Logout Account</button>
                 </div>
 
@@ -433,7 +433,13 @@
             loadData();
         }
 
-        function exitGroup() { activeGroupID = null; loadUserGroups(); document.getElementById('main-ui').classList.add('hidden'); }
+        // Updated to force the view back to "Home" when exiting a batch
+        function exitGroup() { 
+            activeGroupID = null; 
+            loadUserGroups(); 
+            document.getElementById('main-ui').classList.add('hidden'); 
+            switchView('home'); 
+        }
 
         async function checkTodayAttendance() {
             const today = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
@@ -464,16 +470,14 @@
                 studentsArray.push({ id: doc.id, ...doc.data() });
             });
 
-            // FIX: Alphabetical Sorting
             studentsArray.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
             
             currentStudentsData = studentsArray;
 
             studentsArray.forEach((s, index) => {
-                const rollNo = index + 1; // Assign Roll Number dynamically based on alphabetical order
+                const rollNo = index + 1; 
                 const displayDate = s.admissionDate ? s.admissionDate.split('-').reverse().join('-') : 'N/A';
                 
-                // Clickable name that triggers the fee modal
                 const clickableName = `<span style="color: var(--accent); cursor: pointer; font-weight: bold; text-decoration: underline;" onclick="viewStudentFees('${s.id}', '${s.name}')">${s.name}</span>`;
                 
                 home.innerHTML += `<tr><td>${rollNo}</td><td>${clickableName}</td><td>${s.class}</td><td>${displayDate}</td></tr>`;
@@ -492,7 +496,6 @@
             loadFeesForMonth();
         }
 
-        // --- NEW INDIVIDUAL STUDENT FEE MODAL ---
         async function viewStudentFees(studentId, studentName) {
             const modal = document.getElementById('studentFeeModal');
             document.getElementById('modalStudentName').innerText = studentName;
@@ -501,7 +504,6 @@
             modal.classList.remove('hidden');
 
             try {
-                // Fetch fees specifically for this student
                 const feeSnap = await db.collection('fees')
                     .where('groupId', '==', activeGroupID)
                     .where('studentId', '==', studentId)
@@ -530,7 +532,6 @@
             }
         }
 
-        // --- FEES TAB LOGIC ---
         function renderFeeNavigation() {
             const container = document.getElementById('feeMonthsContainer');
             container.innerHTML = "";
