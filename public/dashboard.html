@@ -381,15 +381,36 @@
             if (!activeGroupID) document.getElementById('view-setup').classList.remove('hidden');
         }
 
-        async function createGroup() {
-            const name = document.getElementById('newGroupName').value;
-            if(!name) return alert("Batch name required!");
-            const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-            
-            const groupRef = await db.collection('groups').add({ name, code, admins: [auth.currentUser.email.toLowerCase()] });
-            await db.collection('members').add({ uid: auth.currentUser.uid, groupId: groupRef.id });
-            location.reload();
+       async function createGroup() {
+    const name = document.getElementById('newGroupName').value;
+    if(!name) return alert("Batch name required!");
+    
+    // 1. Find the "Create" button and instantly freeze it
+    const btn = document.querySelector('button[onclick="createGroup()"]');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = "Creating...";
+        btn.style.opacity = "0.7"; // Make it look disabled
+    }
+
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+    try {
+        const groupRef = await db.collection('groups').add({ name, code, admins: [auth.currentUser.email.toLowerCase()] });
+        await db.collection('members').add({ uid: auth.currentUser.uid, groupId: groupRef.id });
+        
+        // Reload the page to show the new batch
+        location.reload(); 
+    } catch (error) {
+        // If the database fails, unfreeze the button so they can try again
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = "Create";
+            btn.style.opacity = "1";
         }
+        alert("Failed to create batch.");
+    }
+}
 
         async function joinGroup() {
             const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
@@ -740,10 +761,18 @@
 
             if(records.length === 0) return alert("No students in this batch!");
 
-            await db.collection('attendance').add({ date: today, groupId: activeGroupID, records, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+    // INSTANTLY freeze the button so they can't double-click
+    const btn = document.getElementById('submit-att-btn');
+    if (btn) btn.disabled = true;
 
-            const btn = document.getElementById('submit-att-btn');
-            btn.innerText = "Submitted"; btn.style.background = "#333"; btn.disabled = true;
+    // NOW save it to the database
+    await db.collection('attendance').add({ date: today, groupId: activeGroupID, records, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+
+    // Update the button visually
+    if (btn) {
+        btn.innerText = "Submitted"; 
+        btn.style.background = "#333"; 
+    }
             
             setTimeout(() => { loadAttendanceHistory(); }, 500);
             alert("Attendance recorded!");
