@@ -64,6 +64,11 @@
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
         .modal-card { background: var(--card); padding: 30px; border-radius: 12px; border: 1px solid var(--accent); width: 90%; max-width: 450px; position: relative; max-height: 85vh; overflow-y: auto; }
         .close-btn { position: absolute; top: 15px; right: 20px; font-size: 28px; color: var(--red); cursor: pointer; font-weight: bold; }
+        /* Collapsible History UI */
+        .history-item { border: 1px solid #333; border-radius: 8px; margin-bottom: 10px; background: #1e1e1e; overflow: hidden; }
+        .history-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: #252525; }
+        .history-content { display: none; padding: 15px; border-top: 1px solid #333; background: #1a1a1a; }
+        .history-content.active { display: block; }
     </style>
 </head>
 <body>
@@ -166,6 +171,7 @@
                     <div class="sub-nav">
                         <div class="sub-item active" id="sub-today" onclick="switchAttBranch('today')">Today (<span id="currentDateDisplay"></span>)</div>
                         <div class="sub-item" id="sub-history" onclick="switchAttBranch('history')">History</div>
+                        <div class="sub-item" id="sub-summary" onclick="switchAttBranch('summary')">Summary</div>
                     </div>
                     <div id="branch-today" class="att-branch">
                         <div class="card" style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
@@ -182,6 +188,39 @@
                         <div id="historyLogs">No attendance history yet.</div>
                     </div>
                 </div>
+                <div id="branch-summary" class="att-branch hidden">
+    <!-- Date Range Selectors -->
+    <div class="card" style="margin-bottom: 15px;">
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <div style="flex: 1;">
+                <label style="font-size: 12px; color: var(--accent);">From Date</label>
+                <input type="date" id="summaryStartDate" style="width: 100%; box-sizing: border-box; padding: 10px; background: #2c2c2c; color: white; border: 1px solid #444; border-radius: 6px;">
+            </div>
+            <div style="flex: 1;">
+                <label style="font-size: 12px; color: var(--accent);">To Date</label>
+                <input type="date" id="summaryEndDate" style="width: 100%; box-sizing: border-box; padding: 10px; background: #2c2c2c; color: white; border: 1px solid #444; border-radius: 6px;">
+            </div>
+        </div>
+        <button onclick="calculateRangeSummary()" style="width: 100%; padding: 12px; border-radius: 6px; border: none; cursor: pointer; background: var(--accent); color: #000; font-weight: bold;">Get Attendance Count</button>
+    </div>
+
+    <!-- Results Table -->
+    <div class="card">
+        <table style="width: 100%; text-align: left; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid #333;">
+                    <th style="color: var(--accent); padding: 10px;">Name</th>
+                    <th style="padding: 10px;">Present</th>
+                    <th style="padding: 10px;">Absent</th>
+                    <th style="padding: 10px;">Total</th>
+                </tr>
+            </thead>
+            <tbody id="summaryList">
+                <tr><td colspan='4' style='text-align:center; padding: 15px; color: #888;'>Select dates and click get count</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 
                 <div id="section-fees" class="section">
                     <div class="card fees-layout">
@@ -725,27 +764,58 @@
                 });
 
                 logDiv.innerHTML = "";
-                historyData.forEach(d => {
-                    let html = `<div class="history-card"><strong>${d.date}</strong><hr style="border:0.5px solid #444; margin:8px 0;">`;
-                    d.records.forEach(r => {
-                        const color = r.status === 'Present' ? 'var(--green)' : (r.status === 'Absent' ? 'var(--red)' : '#888');
-                        html += `<div>${r.name}: <span style="color:${color}">${r.status}</span></div>`;
-                    });
-                    logDiv.innerHTML += html + `</div>`;
+        
+        historyData.forEach(d => {
+            // 1. Build the clickable date header
+            let html = `
+                <div class="history-item">
+                    <div class="history-header" onclick="toggleHistory(this)">
+                        <strong style="color: var(--accent);">${d.date}</strong>
+                        <span class="arrow" style="font-size: 14px; color: #888;">▼</span>
+                    </div>
+                    <div class="history-content">
+            `;
+
+            // 2. Loop through the students for that specific day
+            if (d.records && d.records.length > 0) {
+                d.records.forEach(r => {
+                    const color = r.status === 'Present' ? 'var(--green)' : (r.status === 'Absent' ? 'var(--red)' : '#888');
+                    html += `
+                        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #333;">
+                            <span>${r.name}</span>
+                            <span style="color: ${color}; font-weight: bold;">${r.status}</span>
+                        </div>
+                    `;
                 });
-            } catch (error) {
-                console.error(error);
-                logDiv.innerHTML = "Failed to load history.";
+            } else {
+                html += `<div style="padding: 10px; color: #888;">No attendance data.</div>`;
             }
+
+            // 3. Close the divs
+            html += `
+                    </div>
+                </div>
+            `;
+
+            logDiv.innerHTML += html;
+        });
+    } catch (error) {
+        console.error(error);
+        logDiv.innerHTML = "Failed to load history.";
+    }
         }
 
         function switchAttBranch(b) {
-            document.getElementById('branch-today').classList.toggle('hidden', b !== 'today');
-            document.getElementById('branch-history').classList.toggle('hidden', b !== 'history');
-            document.getElementById('sub-today').classList.toggle('active', b === 'today');
-            document.getElementById('sub-history').classList.toggle('active', b === 'history');
-            if(b === 'history') loadAttendanceHistory();
-        }
+    document.getElementById('branch-today').classList.toggle('hidden', b !== 'today');
+    document.getElementById('branch-history').classList.toggle('hidden', b !== 'history');
+    document.getElementById('branch-summary').classList.toggle('hidden', b !== 'summary');
+    
+    document.getElementById('sub-today').classList.toggle('active', b === 'today');
+    document.getElementById('sub-history').classList.toggle('active', b === 'history');
+    document.getElementById('sub-summary').classList.toggle('active', b === 'summary');
+
+    if (b === 'history') loadAttendanceHistory();
+}
 
         async function addStudent() {
             const nameInput = document.getElementById('s-name');
@@ -782,6 +852,12 @@
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.getElementById('tab-' + id).classList.add('active');
         }
+        function toggleHistory(el) {
+        const content = el.nextElementSibling;
+        content.classList.toggle('active');
+        const arrow = el.querySelector('.arrow');
+        if (arrow) arrow.innerText = content.classList.contains('active') ? '▲' : '▼';
+    }
         function switchView(v) {
             document.getElementById('view-home').classList.toggle('hidden', v !== 'home');
             document.getElementById('view-profile').classList.toggle('hidden', v !== 'profile');
@@ -789,6 +865,69 @@
             document.getElementById('bot-profile').classList.toggle('active', v === 'profile');
             if(v === 'profile') loadData(); 
         }
+        // Helper to convert your DD-MM-YYYY dates into real Dates for the calculator
+function parseCustomDate(dateStr) {
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return new Date(0); // fallback
+    return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+}
+
+// The main counting function
+async function calculateRangeSummary() {
+    const startVal = document.getElementById('summaryStartDate').value;
+    const endVal = document.getElementById('summaryEndDate').value;
+    const summaryList = document.getElementById('summaryList');
+
+    if (!startVal || !endVal) return alert("Please select both From and To dates.");
+
+    const startDate = new Date(startVal);
+    startDate.setHours(0,0,0,0);
+    const endDate = new Date(endVal);
+    endDate.setHours(23,59,59,999);
+
+    summaryList.innerHTML = "<tr><td colspan='4' style='text-align:center;'>Counting...</td></tr>";
+
+    try {
+        const snapshot = await db.collection('attendance').where('groupId', '==', activeGroupID).get();
+        let stats = {}; 
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const recordDate = parseCustomDate(data.date);
+            
+            // Check if this attendance record falls inside your chosen dates
+            if (recordDate >= startDate && recordDate <= endDate) {
+                if (data.records && data.records.length > 0) {
+                    data.records.forEach(r => {
+                        if (!stats[r.name]) stats[r.name] = { present: 0, absent: 0, total: 0 };
+                        
+                        stats[r.name].total += 1;
+                        if (r.status === "Present") stats[r.name].present += 1;
+                        if (r.status === "Absent") stats[r.name].absent += 1;
+                    });
+                }
+            }
+        });
+
+        let html = "";
+        for (const [name, data] of Object.entries(stats)) {
+            html += `
+                <tr style="border-bottom: 1px solid #333;">
+                    <td style="font-weight:bold; padding: 10px;">${name}</td>
+                    <td style="color: var(--green); font-weight:bold; padding: 10px;">${data.present}</td>
+                    <td style="color: var(--red); padding: 10px;">${data.absent}</td>
+                    <td style="padding: 10px;">${data.total}</td>
+                </tr>
+            `;
+        }
+
+        summaryList.innerHTML = html || "<tr><td colspan='4' style='text-align:center; padding: 15px; color:#888;'>No attendance recorded between these dates.</td></tr>";
+
+    } catch (e) {
+        console.error(e);
+        summaryList.innerHTML = "<tr><td colspan='4' style='color:var(--red); padding: 15px;'>Failed to calculate range.</td></tr>";
+    }
+}
     </script>
     <script>
         // Register Service Worker for PWA
