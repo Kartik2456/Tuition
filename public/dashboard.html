@@ -174,11 +174,6 @@
                         <div class="sub-item" id="sub-summary" onclick="switchAttBranch('summary')">Summary</div>
                     </div>
                     <div id="branch-today" class="att-branch">
-                        <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
-        <label style="color: var(--accent); font-weight: bold;">Select Date:</label>
-        <input type="date" id="attendance-date" style="padding: 8px; border-radius: 5px; background: #222; color: white; border: 1px solid #444;">
-        <span id="attendance-day-display" style="color: #aaa; font-style: italic;"></span>
-    </div>
                         <div class="card" style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
                             <div style="flex: 3; min-width: 300px;">
                                 <table>
@@ -675,6 +670,39 @@
                 <button class="btn-cancel" onclick="cancelFeeInput('${id}')">Cancel</button>
             `;
         }
+// Variable to remember if we are filling a past date
+let targetAttendanceDate = null; 
+
+// When you click a missing date in History, this runs:
+function openMissingAttendance(missingDateStr) {
+    targetAttendanceDate = missingDateStr; 
+    switchAttBranch('today'); // Jump to the attendance screen
+    
+    // Change the tab header so you know you're filling a past date!
+    const todayTab = document.getElementById('sub-today');
+    if(todayTab) todayTab.innerHTML = `Filling: ${missingDateStr}`;
+    
+    // Uncheck all radios so you have a fresh slate
+    document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+}
+
+// Helper to get today's date in DD-MM-YYYY format
+function getTodayDDMMYYYY() {
+    const d = new Date();
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    return `${dd}-${mm}-${d.getFullYear()}`;
+}
+
+// Helper to get the Day Name (Monday, Tuesday) from DD-MM-YYYY
+function getDayNameFromDDMMYYYY(dateStr) {
+    const [dd, mm, yyyy] = dateStr.split('-');
+    const d = new Date(`${yyyy}-${mm}-${dd}`);
+    return d.toLocaleDateString('en-US', { weekday: 'long' });
+}
+
+
+
 
 // Function to show/hide the "Reason" input box
 function toggleTuitionOffUI() {
@@ -696,20 +724,21 @@ function getFormattedDateAndDay(dateVal) {
 }
 
 // Function to submit "Tuition Off" to the database
+// Function to submit "Tuition Off" to the database
 async function submitTuitionOff() {
-    const dateInput = document.getElementById('attendance-date').value;
-    const reason = document.getElementById('tuitionOffReason').value.trim();
+    // THIS IS THE CHANGE: It now uses the smart tracker instead of the deleted calendar!
+    const dateToSave = targetAttendanceDate ? targetAttendanceDate : getTodayDDMMYYYY();
+    const dayName = getDayNameFromDDMMYYYY(dateToSave);
     
-    if (!dateInput) return alert("Please select a date!");
+    const reason = document.getElementById('tuitionOffReason').value.trim();
     if (!reason) return alert("Please type a reason!");
 
-    const { dateStr, dayName } = getFormattedDateAndDay(dateInput);
-    const attendanceDocId = `${activeGroupID}_${dateStr}`; 
+    const attendanceDocId = `${activeGroupID}_${dateToSave}`; 
 
     // Smart check to prevent duplicate entries
     const existingDoc = await db.collection('attendance').doc(attendanceDocId).get();
     if (existingDoc.exists) {
-        alert("Attendance or Tuition Off is already registered for this date!");
+        alert(`Attendance or Tuition Off is already registered for ${dateToSave}!`);
         return location.reload();
     }
 
@@ -718,7 +747,7 @@ async function submitTuitionOff() {
 
     try {
         await db.collection('attendance').doc(attendanceDocId).set({
-            date: dateStr,
+            date: dateToSave,
             day: dayName, 
             groupId: activeGroupID,
             isOff: true,      
@@ -814,31 +843,24 @@ async function submitTuitionOff() {
             }
         }
 
-       async function submitAttendance() {
-    // 1. Grab the date from your new calendar picker
-    const dateInput = document.getElementById('attendance-date').value;
-    if (!dateInput) return alert("Please select a date!");
-    
-    // Convert it to DD-MM-YYYY and get the Day name (Monday, Tuesday, etc.)
-    const { dateStr, dayName } = getFormattedDateAndDay(dateInput);
+      async function submitAttendance() {
+    // Determine if we are saving for Today, or a Missing Date
+    const dateToSave = targetAttendanceDate ? targetAttendanceDate : getTodayDDMMYYYY();
+    const dayName = getDayNameFromDDMMYYYY(dateToSave);
 
     const studentChecks = document.querySelectorAll('.student-check');
     let records = [];
     studentChecks.forEach(chk => {
-        records.push({
-            name: chk.dataset.name,
-            status: chk.checked ? "Present" : "Absent"
-        });
+        records.push({ name: chk.dataset.name, status: chk.checked ? "Present" : "Absent" });
     });
 
     if(records.length === 0) return alert("No students in this batch!");
 
-    // 2. Your bulletproof ID and Smart Check! (Using the selected date)
-    const attendanceDocId = `${activeGroupID}_${dateStr}`;
+    const attendanceDocId = `${activeGroupID}_${dateToSave}`;
     const existingDoc = await db.collection('attendance').doc(attendanceDocId).get();
     
     if (existingDoc.exists) {
-        alert("Attendance or Tuition Off is already registered for this date!");
+        alert(`Attendance for ${dateToSave} is already registered!`);
         location.reload(); 
         return; 
     }
@@ -846,9 +868,8 @@ async function submitTuitionOff() {
     const btn = document.getElementById('submit-att-btn');
     if (btn) btn.disabled = true;
 
-    // 3. Save it to Firebase (Now including the day of the week!)
     await db.collection('attendance').doc(attendanceDocId).set({ 
-        date: dateStr, 
+        date: dateToSave, 
         day: dayName, 
         groupId: activeGroupID, 
         records, 
@@ -858,9 +879,7 @@ async function submitTuitionOff() {
     if (btn) {
         btn.innerText = "Submitted"; 
         btn.style.background = "#333"; 
-    }
-
-            
+    }    
             setTimeout(() => { loadAttendanceHistory(); }, 500);
             alert("Attendance recorded!");
         }
@@ -870,52 +889,59 @@ async function submitTuitionOff() {
     logDiv.innerHTML = "<p style='text-align:center;'>Loading...</p>";
     try {
         const snapshot = await db.collection('attendance').where('groupId', '==', activeGroupID).get();
-        if (snapshot.empty) { logDiv.innerHTML = "<p style='text-align:center;'>No attendance history yet.</p>"; return; }
-
-        // Keep your awesome manual sorting logic!
         let historyData = [];
         snapshot.forEach(doc => historyData.push(doc.data()));
-        historyData.sort((a, b) => {
-            let timeA = a.timestamp ? a.timestamp.toMillis() : Date.now();
-            let timeB = b.timestamp ? b.timestamp.toMillis() : Date.now();
-            return timeB - timeA;
-        });
 
         let html = "";
-        historyData.forEach(data => {
-            const dayText = data.day ? ` - ${data.day}` : '';
-
-            // If it is a "Tuition Off" day, make the special red card
-            if (data.isOff) {
+        
+        // Loop through the last 15 days automatically
+        for(let i = 0; i < 15; i++) {
+            let d = new Date();
+            d.setDate(d.getDate() - i);
+            let dd = String(d.getDate()).padStart(2, '0');
+            let mm = String(d.getMonth() + 1).padStart(2, '0');
+            let yyyy = d.getFullYear();
+            let dateStr = `${dd}-${mm}-${yyyy}`;
+            
+            // Check if this date exists in your database
+            let data = historyData.find(record => record.date === dateStr);
+            
+            if (data) {
+                const dayText = data.day ? ` - ${data.day}` : '';
+                if (data.isOff) {
+                    html += `
+                    <div class="card" style="border-left: 5px solid var(--red); margin-bottom: 10px;">
+                        <div style="font-size: 14px; font-weight: bold; color: var(--red);">
+                            ${data.date}${dayText} <span style="background: var(--red); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 10px;">TUITION OFF</span>
+                        </div>
+                        <div style="margin-top: 8px; color: #aaa; font-style: italic;">Reason: <span style="color: white;">${data.reason}</span></div>
+                    </div>`;
+                } else {
+                    html += `
+                    <div class="history-item">
+                        <div class="history-header" onclick="toggleHistory(this)">
+                            <strong style="color: var(--accent);">${data.date}${dayText}</strong>
+                            <span class="arrow" style="font-size: 14px; color: #888;">▼</span>
+                        </div>
+                        <div class="history-details hidden" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #333; display: flex; flex-wrap: wrap; gap: 8px;">`;
+                    if (data.records) {
+                        data.records.forEach(r => {
+                            const color = r.status === 'Present' ? 'var(--green)' : 'var(--red)';
+                            html += `<span style="font-size: 12px; color: ${color}; background: #222; padding: 4px 8px; border-radius: 4px; border: 1px solid #333;">${r.name}: ${r.status}</span>`;
+                        });
+                    }
+                    html += `</div></div>`;
+                }
+            } else {
+                // If it doesn't exist, create an ORANGE MISSING CARD that you can tap!
                 html += `
-                <div class="card" style="border-left: 5px solid var(--red); margin-bottom: 10px;">
-                    <div style="font-size: 14px; font-weight: bold; color: var(--red);">
-                        ${data.date}${dayText} <span style="background: var(--red); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 10px;">TUITION OFF</span>
-                    </div>
-                    <div style="margin-top: 8px; color: #aaa; font-style: italic;">
-                        Reason: <span style="color: white;">${data.reason}</span>
+                <div class="card" style="border-left: 5px solid orange; margin-bottom: 10px; cursor: pointer; background: #2a2015;" onclick="openMissingAttendance('${dateStr}')">
+                    <div style="font-size: 14px; font-weight: bold; color: orange; display: flex; justify-content: space-between; align-items: center;">
+                        ${dateStr} <span style="background: orange; color: black; padding: 4px 8px; border-radius: 4px; font-size: 11px;">TAP TO FILL MISSING</span>
                     </div>
                 </div>`;
-            } else {
-                // Otherwise, show the normal attendance card (using your cool toggle style!)
-                html += `
-                <div class="history-item">
-                    <div class="history-header" onclick="toggleHistory(this)">
-                        <strong style="color: var(--accent);">${data.date}${dayText}</strong>
-                        <span class="arrow" style="font-size: 14px; color: #888;">▼</span>
-                    </div>
-                    <div class="history-details hidden" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #333; display: flex; flex-wrap: wrap; gap: 8px;">
-                `;
-                
-                if (data.records) {
-                    data.records.forEach(r => {
-                        const color = r.status === 'Present' ? 'var(--green)' : 'var(--red)';
-                        html += `<span style="font-size: 12px; color: ${color}; background: #222; padding: 4px 8px; border-radius: 4px; border: 1px solid #333;">${r.name}: ${r.status}</span>`;
-                    });
-                }
-                html += `</div></div>`;
             }
-        });
+        }
         logDiv.innerHTML = html;
     } catch (error) {
         console.error(error);
