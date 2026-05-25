@@ -843,19 +843,31 @@ async function submitTuitionOff() {
             }
         }
 
-      async function submitAttendance() {
-    // Determine if we are saving for Today, or a Missing Date
+     async function submitAttendance() {
+    // 1. Determine if we are saving for Today, or a Missing Date
     const dateToSave = targetAttendanceDate ? targetAttendanceDate : getTodayDDMMYYYY();
     const dayName = getDayNameFromDDMMYYYY(dateToSave);
 
-    const studentChecks = document.querySelectorAll('.student-check');
+    // 2. Fetch the actual students from the database exactly like you used to!
     let records = [];
-    studentChecks.forEach(chk => {
-        records.push({ name: chk.dataset.name, status: chk.checked ? "Present" : "Absent" });
+    const snapshot = await db.collection('students').where('groupId', '==', activeGroupID).get();
+    
+    snapshot.forEach(doc => {
+        const id = doc.id;
+        const pRadio = document.getElementById(`p-${id}`);
+        const aRadio = document.getElementById(`a-${id}`);
+        
+        let status = "Not Marked"; // Default if they somehow didn't click anything
+        if (pRadio && pRadio.checked) status = "Present";
+        if (aRadio && aRadio.checked) status = "Absent";
+        
+        records.push({ name: doc.data().name, status: status });
     });
 
+    // Now it will actually count them properly!
     if(records.length === 0) return alert("No students in this batch!");
 
+    // 3. Smart duplicate check
     const attendanceDocId = `${activeGroupID}_${dateToSave}`;
     const existingDoc = await db.collection('attendance').doc(attendanceDocId).get();
     
@@ -865,6 +877,7 @@ async function submitTuitionOff() {
         return; 
     }
 
+    // 4. Freeze button and save
     const btn = document.getElementById('submit-att-btn');
     if (btn) btn.disabled = true;
 
@@ -879,10 +892,14 @@ async function submitTuitionOff() {
     if (btn) {
         btn.innerText = "Submitted"; 
         btn.style.background = "#333"; 
-    }    
-            setTimeout(() => { loadAttendanceHistory(); }, 500);
-            alert("Attendance recorded!");
-        }
+    }
+
+    // 5. Reset the target date so it doesn't get stuck in the past
+    targetAttendanceDate = null; 
+    
+    alert("Attendance recorded successfully!");
+    loadAttendanceHistory(); // Refresh the list so the orange missing card disappears
+}
 
         async function loadAttendanceHistory() {
     const logDiv = document.getElementById('historyLogs');
