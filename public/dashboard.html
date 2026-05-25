@@ -897,7 +897,7 @@ async function submitTuitionOff() {
     alert("Attendance recorded successfully!");
     location.reload(); // Refresh the page to completely reset the UI back to normal!
 }
-        async function loadAttendanceHistory() {
+      async function loadAttendanceHistory() {
     const logDiv = document.getElementById('historyLogs');
     logDiv.innerHTML = "<p style='text-align:center;'>Loading...</p>";
     try {
@@ -930,23 +930,32 @@ async function submitTuitionOff() {
                         <div style="margin-top: 8px; color: #aaa; font-style: italic;">Reason: <span style="color: white;">${data.reason}</span></div>
                     </div>`;
                 } else {
+                    // Restored your EXACT original dropdown styling here!
                     html += `
                     <div class="history-item">
                         <div class="history-header" onclick="toggleHistory(this)">
                             <strong style="color: var(--accent);">${data.date}${dayText}</strong>
                             <span class="arrow" style="font-size: 14px; color: #888;">▼</span>
                         </div>
-                        <div class="history-details hidden" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #333; display: flex; flex-wrap: wrap; gap: 8px;">`;
-                    if (data.records) {
+                        <div class="history-details hidden" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #333;">`;
+                    
+                    if (data.records && data.records.length > 0) {
                         data.records.forEach(r => {
-                            const color = r.status === 'Present' ? 'var(--green)' : 'var(--red)';
-                            html += `<span style="font-size: 12px; color: ${color}; background: #222; padding: 4px 8px; border-radius: 4px; border: 1px solid #333;">${r.name}: ${r.status}</span>`;
+                            let color = r.status === 'Present' ? 'var(--green)' : 'var(--red)';
+                            html += `
+                            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #222;">
+                                <span>${r.name}</span>
+                                <span style="color: ${color}; font-weight: bold;">${r.status}</span>
+                            </div>`;
                         });
+                    } else {
+                        html += `<div style="padding: 10px; color: #888;">No attendance data.</div>`;
                     }
+                    
                     html += `</div></div>`;
                 }
             } else {
-                // If it doesn't exist, create an ORANGE MISSING CARD that you can tap!
+                // The ORANGE MISSING CARD
                 html += `
                 <div class="card" style="border-left: 5px solid orange; margin-bottom: 10px; cursor: pointer; background: #2a2015;" onclick="openMissingAttendance('${dateStr}')">
                     <div style="font-size: 14px; font-weight: bold; color: orange; display: flex; justify-content: space-between; align-items: center;">
