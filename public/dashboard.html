@@ -722,7 +722,21 @@ function getFormattedDateAndDay(dateVal) {
     const [yyyy, mm, dd] = dateVal.split('-');
     return { dateStr: `${dd}-${mm}-${yyyy}`, dayName };
 }
-
+// This makes the history dropdowns actually open and close when you click the date!
+function toggleHistory(headerElement) {
+    const detailsDiv = headerElement.nextElementSibling;
+    const arrowSpan = headerElement.querySelector('.arrow');
+    
+    // Toggle the hidden class to show/hide the students
+    detailsDiv.classList.toggle('hidden');
+    
+    // Flip the arrow icon up or down
+    if (detailsDiv.classList.contains('hidden')) {
+        if (arrowSpan) arrowSpan.innerText = "▼";
+    } else {
+        if (arrowSpan) arrowSpan.innerText = "▲";
+    }
+}
 // Function to submit "Tuition Off" to the database
 // Function to submit "Tuition Off" to the database
 async function submitTuitionOff() {
