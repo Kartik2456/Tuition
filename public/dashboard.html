@@ -726,24 +726,27 @@ function getFormattedDateAndDay(dateVal) {
 // Function to submit "Tuition Off" to the database
 // Function to submit "Tuition Off" to the database
 async function submitTuitionOff() {
-    // THIS IS THE CHANGE: It now uses the smart tracker instead of the deleted calendar!
+    // 1. Use the smart date tracker (handles both Today and Missing dates)
     const dateToSave = targetAttendanceDate ? targetAttendanceDate : getTodayDDMMYYYY();
-    const dayName = getDayNameFromDDMMYYYY(dateToSave);
-    
     const reason = document.getElementById('tuitionOffReason').value.trim();
+    
     if (!reason) return alert("Please type a reason!");
 
+    const dayName = getDayNameFromDDMMYYYY(dateToSave);
     const attendanceDocId = `${activeGroupID}_${dateToSave}`; 
 
-    // Smart check to prevent duplicate entries
+    // 2. Smart check to prevent duplicate entries
     const existingDoc = await db.collection('attendance').doc(attendanceDocId).get();
     if (existingDoc.exists) {
-        alert(`Attendance or Tuition Off is already registered for ${dateToSave}!`);
+        alert(`Attendance or Tuition Off for ${dateToSave} is already registered!`);
         return location.reload();
     }
 
-    const btn = document.querySelector('button[onclick="submitTuitionOff()"]');
-    if (btn) btn.disabled = true;
+    // 3. MUTUAL LOCK: Disable BOTH buttons instantly so you can't click the other!
+    const confirmOffBtn = document.querySelector('button[onclick="submitTuitionOff()"]');
+    const submitAttBtn = document.getElementById('submit-att-btn');
+    if (confirmOffBtn) confirmOffBtn.disabled = true;
+    if (submitAttBtn) submitAttBtn.disabled = true; // Locks the main attendance button!
 
     try {
         await db.collection('attendance').doc(attendanceDocId).set({
@@ -755,10 +758,11 @@ async function submitTuitionOff() {
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
         alert("Tuition marked OFF successfully!");
-        location.reload();
+        location.reload(); // Refresh to completely clear the screen and reset the buttons
     } catch (e) {
         console.error(e);
-        if(btn) btn.disabled = false;
+        if(confirmOffBtn) confirmOffBtn.disabled = false;
+        if(submitAttBtn) submitAttBtn.disabled = false;
         alert("Failed to mark tuition off.");
     }
 }
@@ -844,11 +848,9 @@ async function submitTuitionOff() {
         }
 
      async function submitAttendance() {
-    // 1. Determine if we are saving for Today, or a Missing Date
     const dateToSave = targetAttendanceDate ? targetAttendanceDate : getTodayDDMMYYYY();
     const dayName = getDayNameFromDDMMYYYY(dateToSave);
 
-    // 2. Fetch the actual students from the database exactly like you used to!
     let records = [];
     const snapshot = await db.collection('students').where('groupId', '==', activeGroupID).get();
     
@@ -857,17 +859,15 @@ async function submitTuitionOff() {
         const pRadio = document.getElementById(`p-${id}`);
         const aRadio = document.getElementById(`a-${id}`);
         
-        let status = "Not Marked"; // Default if they somehow didn't click anything
+        let status = "Not Marked"; 
         if (pRadio && pRadio.checked) status = "Present";
         if (aRadio && aRadio.checked) status = "Absent";
         
         records.push({ name: doc.data().name, status: status });
     });
 
-    // Now it will actually count them properly!
     if(records.length === 0) return alert("No students in this batch!");
 
-    // 3. Smart duplicate check
     const attendanceDocId = `${activeGroupID}_${dateToSave}`;
     const existingDoc = await db.collection('attendance').doc(attendanceDocId).get();
     
@@ -877,9 +877,14 @@ async function submitTuitionOff() {
         return; 
     }
 
-    // 4. Freeze button and save
+    // MUTUAL LOCK: Disable Submit, and completely HIDE the Tuition Off button!
     const btn = document.getElementById('submit-att-btn');
+    const tuitionOffBtn = document.getElementById('btn-tuition-off');
+    const tuitionOffContainer = document.getElementById('tuition-off-container');
+    
     if (btn) btn.disabled = true;
+    if (tuitionOffBtn) tuitionOffBtn.style.display = 'none'; // Poof, it's gone!
+    if (tuitionOffContainer) tuitionOffContainer.style.display = 'none';
 
     await db.collection('attendance').doc(attendanceDocId).set({ 
         date: dateToSave, 
@@ -889,18 +894,9 @@ async function submitTuitionOff() {
         timestamp: firebase.firestore.FieldValue.serverTimestamp() 
     });
 
-    if (btn) {
-        btn.innerText = "Submitted"; 
-        btn.style.background = "#333"; 
-    }
-
-    // 5. Reset the target date so it doesn't get stuck in the past
-    targetAttendanceDate = null; 
-    
     alert("Attendance recorded successfully!");
-    loadAttendanceHistory(); // Refresh the list so the orange missing card disappears
+    location.reload(); // Refresh the page to completely reset the UI back to normal!
 }
-
         async function loadAttendanceHistory() {
     const logDiv = document.getElementById('historyLogs');
     logDiv.innerHTML = "<p style='text-align:center;'>Loading...</p>";
