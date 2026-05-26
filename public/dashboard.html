@@ -676,16 +676,33 @@ let targetAttendanceDate = null;
 // When you click a missing date in History, this runs:
 function openMissingAttendance(missingDateStr) {
     targetAttendanceDate = missingDateStr; 
-    switchAttBranch('today'); // Jump to the attendance screen
+    switchAttBranch('today'); 
     
-    // Change the tab header so you know you're filling a past date!
+    // Change the tab header so you know you're filling a past date
     const todayTab = document.getElementById('sub-today');
     if(todayTab) todayTab.innerHTML = `Filling: ${missingDateStr}`;
     
-    // Uncheck all radios so you have a fresh slate
-    document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
-}
+    // 1. WAKE UP THE RADIO BUTTONS (Uncheck them and Unlock them)
+    document.querySelectorAll('input[type="radio"]').forEach(r => {
+        r.checked = false;
+        r.disabled = false; // This brings your clickable circles back!
+    });
 
+    // 2. WAKE UP THE SUBMIT BUTTON (Unlock it and restore your bright color)
+    const btn = document.getElementById('submit-att-btn');
+    if(btn) {
+        btn.disabled = false;
+        btn.innerText = "Submit";
+        btn.style.background = "var(--accent)"; // Restores your original cyan color
+    }
+
+    // 3. WAKE UP THE TUITION OFF BUTTON (Just in case it was hidden)
+    const tuitionOffBtn = document.getElementById('btn-tuition-off');
+    if (tuitionOffBtn) tuitionOffBtn.style.display = 'block';
+    
+    const tuitionOffContainer = document.getElementById('tuition-off-container');
+    if (tuitionOffContainer) tuitionOffContainer.classList.add('hidden');
+}
 // Helper to get today's date in DD-MM-YYYY format
 function getTodayDDMMYYYY() {
     const d = new Date();
