@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Admin Vault</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    
+    <script>
+        // ⚠️ IMPORTANT: You still need to copy your Firebase keys from your index.html
+        // and paste them right here so this page can connect to your database!
+        const firebaseConfig = {
+            apiKey: "AIzaSyDH9vfqKh16tka_14deuwWzYDQR-2TvR_U",
+            authDomain: "tuituionhub.firebaseapp.com",
+            projectId: "tuituionhub",
+            storageBucket: "tuituionhub.firebasestorage.app",
+            messagingSenderId: "373410141090",
+            appId: "1:373410141090:web:45144c02501738c31798fb",
+            measurementId: "G-XPS2L1NZ2V"
+        };
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+    </script>
+</head>
+<body style="background: #111; color: white; font-family: sans-serif; padding: 20px;">
+
+    <script>
+        firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+                // YOUR EXACT MASTER EMAIL:
+                const masterEmail = "ganeshthapa1420@gmail.com"; 
+                
+                if (user.email !== masterEmail) {
+                    // If it's Tutor A (or anyone else), kick them out immediately!
+                    alert("ACCESS DENIED: Master Admin privileges required.");
+                    window.location.href = "dashboard.html"; 
+                } else {
+                    // If it is YOU, unlock the page!
+                    document.getElementById('vault-content').style.display = 'block';
+                    document.getElementById('admin-email-display').innerText = user.email;
+                }
+            } else {
+                // If they aren't logged in at all, kick them to the login screen
+                window.location.href = "index.html"; 
+            }
+        });
+    </script>
+
+    <div id="vault-content" style="display: none;">
+        <h1 style="color: cyan;">Master Admin Dashboard</h1>
+        <p>Welcome, <span id="admin-email-display" style="color: yellow;"></span>.</p>
+        <p>You have full backend control. Other users cannot access this page.</p>
+        
+        <div id="master-database-viewer" style="margin-top: 30px; padding: 15px; background: #222; border-radius: 8px;">
+            <p style="color: #888;">Fetching all accounts from Firebase...</p>
+        </div>
+    </div>
+
+</body>
+</html>

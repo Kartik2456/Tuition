@@ -260,6 +260,9 @@
                     <!-- Moved Switch Batch Button Here -->
                     <button onclick="exitGroup()" style="background: #332940; color: white; border: 1px solid var(--accent); width: 100%; margin-bottom: 15px;">Switch Batch</button>
                     <button onclick="handleLogout()" style="background: var(--red); color: white; width: 100%;">Logout Account</button>
+                    <button id="btn-super-admin" onclick="window.location.href='superadmin.html'" style="display: none; background: purple; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px;">
+    ⚙️ Master Control
+</button>
                 </div>
 
                 <div class="card" id="adminListCard">
@@ -325,6 +328,12 @@
 
         auth.onAuthStateChanged(async (user) => {
             if (user) {
+                // WAKE UP THE SECRET DOOR ONLY FOR MASTER ADMIN
+        const masterEmail = "ganeshthapa1420@gmail.com"; 
+        if (user.email === masterEmail) {
+            const superAdminBtn = document.getElementById('btn-super-admin');
+            if (superAdminBtn) superAdminBtn.style.display = 'block'; 
+        }
                 document.getElementById('view-auth').classList.add('hidden');
                 
                 const userDoc = await db.collection('users').doc(user.uid).get();
