@@ -76,9 +76,9 @@
             </div>
         </div>
     </div>
-   <!-- THE BRAIN -->
+  <!-- THE BRAIN -->
     <script>
-        // FUNCTION 1: Fetch all users
+        // FUNCTION 1: Fetch all users (Vertical Stacked List)
         async function loadAllAccounts() {
             const viewer = document.getElementById('master-database-viewer');
             viewer.innerHTML = ''; 
@@ -97,7 +97,7 @@
                     const userEmail = userData.email || "No Email";
                     const uid = doc.id; 
 
-                    // UPDATE: We are now passing the userEmail into the onclick function too!
+                    // NEW: We are now passing the userEmail to the click function!
                     const userCard = `
                         <div style="padding: 12px 0; border-bottom: 1px solid #333; cursor: pointer;" 
                              onclick="loadUserGroups('${uid}', '${userName}', '${userEmail}')">
@@ -114,64 +114,45 @@
             }
         }
 
-       // FUNCTION 3: Fetch Students and Attendance for the clicked group
-        async function loadGroupDetails(groupId, groupName) {
+        // FUNCTION 2: Fetch specific groups for the clicked user
+        async function loadUserGroups(uid, userName, userEmail) {
             const groupViewer = document.getElementById('group-viewer');
-            groupViewer.innerHTML = `<p style="color: yellow;">Unlocking data for <b>${groupName}</b>...</p>`;
+            groupViewer.innerHTML = `<p style="color: yellow;">Loading all groups for <b>${userName}</b>...</p>`;
             
             try {
-                // 1. Fetch the Students
-                const studentSnap = await db.collection('students').where('groupId', '==', groupId).get();
-                let studentsHTML = '';
+                // NEW: Searches the 'admins' array for this specific user's Gmail address!
+                const snapshot = await db.collection('groups').where('admins', 'array-contains', userEmail).get();
                 
-                if (studentSnap.empty) {
-                    studentsHTML = '<p style="color: #888; font-size: 14px;">No students enrolled yet.</p>';
-                } else {
-                    studentSnap.forEach(doc => {
-                        const data = doc.data();
-                        const studentName = data.name || "Unknown Student";
-                        const studentClass = data.class || "N/A";
-                        studentsHTML += `<div style="padding: 8px 0; border-bottom: 1px solid #333; color: white;">🧑‍🎓 ${studentName} <span style="color: #888; font-size: 12px;">(Class: ${studentClass})</span></div>`;
-                    });
+                if (snapshot.empty) {
+                    groupViewer.innerHTML = `
+                        <h4 style="color: var(--green, #4CAF50); margin-top: 0;">Groups for ${userName}</h4>
+                        <p style="color: #888;">This user is not an admin of any groups yet.</p>
+                    `;
+                    return;
                 }
 
-                // 2. Fetch the Attendance
-                const attendanceSnap = await db.collection('attendance').where('groupId', '==', groupId).get();
-                let attendanceHTML = '';
+                let groupsHTML = `<h4 style="color: var(--green, #4CAF50); margin-top: 0; margin-bottom: 15px;">Groups for ${userName}</h4>`;
                 
-                if (attendanceSnap.empty) {
-                    attendanceHTML = '<p style="color: #888; font-size: 14px; line-height: 1.5;">No records found.<br><span style="font-size: 11px; color: #ff5252;">(Note: Ensure your app saves the "groupId" inside new attendance records!)</span></p>';
-            }else {
-                    attendanceSnap.forEach(doc => {
-                        const data = doc.data();
-                        const date = data.date || doc.id; // Fallback to document ID if date field is missing
-                        attendanceHTML += `<div style="padding: 8px 0; border-bottom: 1px solid #333; color: #b388ff;">📅 ${date}</div>`;
-                    });
-                }
+                snapshot.forEach(doc => {
+                    const groupData = doc.data();
+                    const groupName = groupData.name || "Unnamed Group";
+                    const groupCode = groupData.code || "No Code";
+                    const groupId = doc.id;
 
-                // 3. Build the UI inside the right-hand panel
-                groupViewer.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <h4 style="color: cyan; margin: 0; font-size: 18px;">${groupName}</h4>
-                        <span style="color: #888; font-size: 12px;">Tap the tutor's name again to go back</span>
-                    </div>
-                    
-                    <!-- Students Box -->
-                    <div style="background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444; margin-bottom: 15px;">
-                        <h5 style="color: var(--green, #4CAF50); margin-top: 0; margin-bottom: 10px; font-size: 15px;">Enrolled Students</h5>
-                        <div>${studentsHTML}</div>
-                    </div>
-
-                    <!-- Attendance Box -->
-                    <div style="background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444;">
-                        <h5 style="color: #b388ff; margin-top: 0; margin-bottom: 10px; font-size: 15px;">Attendance Records</h5>
-                        <div>${attendanceHTML}</div>
-                    </div>
-                `;
+                    groupsHTML += `
+                        <div style="background: #333; padding: 12px; margin-bottom: 10px; border-radius: 5px; cursor: pointer; border: 1px solid #444;"
+                             onclick="loadGroupDetails('${groupId}', '${groupName}')">
+                            <strong style="color: white; font-size: 16px;">📚 ${groupName}</strong><br>
+                            <span style="color: #aaa; font-size: 13px;">Code: ${groupCode}</span>
+                        </div>
+                    `;
+                });
+                
+                groupViewer.innerHTML = groupsHTML;
 
             } catch (error) {
-                console.error("Error fetching inside group data:", error);
-                groupViewer.innerHTML = `<p style="color: red;">Error unlocking group data.</p>`;
+                console.error("Error fetching groups:", error);
+                groupViewer.innerHTML = `<p style="color: red;">Error loading groups.</p>`;
             }
         }
 
