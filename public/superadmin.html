@@ -76,9 +76,9 @@
             </div>
         </div>
     </div>
-      <!-- THE BRAIN -->
+   <!-- THE BRAIN -->
     <script>
-        // FUNCTION 1: Fetch all users (Vertical Stacked List)
+        // FUNCTION 1: Fetch all users
         async function loadAllAccounts() {
             const viewer = document.getElementById('master-database-viewer');
             viewer.innerHTML = ''; 
@@ -97,10 +97,10 @@
                     const userEmail = userData.email || "No Email";
                     const uid = doc.id; 
 
-                    // Stacked vertical rows, no sliding!
+                    // UPDATE: We are now passing the userEmail into the onclick function too!
                     const userCard = `
                         <div style="padding: 12px 0; border-bottom: 1px solid #333; cursor: pointer;" 
-                             onclick="loadUserGroups('${uid}', '${userName}')">
+                             onclick="loadUserGroups('${uid}', '${userName}', '${userEmail}')">
                             <div style="color: white; font-size: 16px; margin-bottom: 3px;">${userName}</div>
                             <div style="color: #b388ff; font-size: 13px;">${userEmail}</div>
                         </div>
@@ -115,28 +115,40 @@
         }
 
         // FUNCTION 2: Fetch specific groups for the clicked user
-        async function loadUserGroups(uid, userName) {
+        // UPDATE: This function now receives the userEmail parameter
+        async function loadUserGroups(uid, userName, userEmail) {
             const groupViewer = document.getElementById('group-viewer');
             groupViewer.innerHTML = `<p style="color: yellow;">Loading all groups for <b>${userName}</b>...</p>`;
             
             try {
-                const snapshot = await db.collection('groups').where('owner', '==', uid).get();
+                // We run TWO searches to catch both your old and new group styles!
+                const query1 = db.collection('groups').where('owner', '==', uid).get();
+                // 'array-contains' is the special Firebase command to search inside a list
+                const query2 = db.collection('groups').where('admins', 'array-contains', userEmail).get();
+
+                // Wait for both searches to finish
+                const [ownerSnapshot, adminSnapshot] = await Promise.all([query1, query2]);
+
+                // Combine the results into a Map to automatically remove any duplicates
+                const uniqueGroups = new Map();
                 
-                if (snapshot.empty) {
+                ownerSnapshot.forEach(doc => uniqueGroups.set(doc.id, doc.data()));
+                adminSnapshot.forEach(doc => uniqueGroups.set(doc.id, doc.data()));
+
+                if (uniqueGroups.size === 0) {
                     groupViewer.innerHTML = `
                         <h4 style="color: var(--green, #4CAF50); margin-top: 0;">Groups for ${userName}</h4>
-                        <p style="color: #888;">This user hasn't created any groups yet.</p>
+                        <p style="color: #888;">This user isn't an admin of any groups yet.</p>
                     `;
                     return;
                 }
 
                 let groupsHTML = `<h4 style="color: var(--green, #4CAF50); margin-top: 0; margin-bottom: 15px;">Groups for ${userName}</h4>`;
                 
-                snapshot.forEach(doc => {
-                    const groupData = doc.data();
+                // Loop through our merged, duplicate-free list of groups
+                uniqueGroups.forEach((groupData, groupId) => {
                     const groupName = groupData.name || "Unnamed Group";
                     const groupCode = groupData.code || "No Code";
-                    const groupId = doc.id;
 
                     groupsHTML += `
                         <div style="background: #333; padding: 12px; margin-bottom: 10px; border-radius: 5px; cursor: pointer; border: 1px solid #444;"
@@ -160,6 +172,5 @@
             alert(`You clicked the group: ${groupName}\n\nNext, we will load the attendance and students!`);
         }
     </script>
-
 </body>
 </html>
