@@ -911,7 +911,7 @@ async function submitTuitionOff() {
     alert("Attendance recorded successfully!");
     location.reload(); // Refresh the page to completely reset the UI back to normal!
 }
-      async function loadAttendanceHistory() {
+    async function loadAttendanceHistory() {
     const logDiv = document.getElementById('historyLogs');
     logDiv.innerHTML = "<p style='text-align:center;'>Loading...</p>";
     try {
@@ -930,7 +930,6 @@ async function submitTuitionOff() {
             let yyyy = d.getFullYear();
             let dateStr = `${dd}-${mm}-${yyyy}`;
             
-            // Check if this date exists in your database
             let data = historyData.find(record => record.date === dateStr);
             
             if (data) {
@@ -944,14 +943,15 @@ async function submitTuitionOff() {
                         <div style="margin-top: 8px; color: #aaa; font-style: italic;">Reason: <span style="color: white;">${data.reason}</span></div>
                     </div>`;
                 } else {
-                    // Restored your EXACT original dropdown styling here!
+                    // BRUTE FORCE TOGGLE: The JavaScript is baked right into the onclick tag!
                     html += `
-                    <div class="history-item">
-                        <div class="history-header" onclick="toggleHistory(this)">
+                    <div class="history-item" style="background: #1e1e1e; padding: 10px; border-radius: 6px; margin-bottom: 10px;">
+                        <div class="history-header" style="cursor: pointer; display: flex; justify-content: space-between;" onclick="const details = this.nextElementSibling; const arrow = this.querySelector('.arrow'); if(details.style.display === 'none') { details.style.display = 'block'; arrow.innerText = '▲'; } else { details.style.display = 'none'; arrow.innerText = '▼'; }">
                             <strong style="color: var(--accent);">${data.date}${dayText}</strong>
                             <span class="arrow" style="font-size: 14px; color: #888;">▼</span>
                         </div>
-                        <div class="history-details hidden" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #333;">`;
+                        
+                        <div class="history-details" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #333;">`;
                     
                     if (data.records && data.records.length > 0) {
                         data.records.forEach(r => {
@@ -963,13 +963,12 @@ async function submitTuitionOff() {
                             </div>`;
                         });
                     } else {
-                        html += `<div style="padding: 10px; color: #888;">No attendance data.</div>`;
+                        html += `<div style="padding: 10px; color: #888;">No attendance data saved for these students.</div>`;
                     }
                     
                     html += `</div></div>`;
                 }
             } else {
-                // The ORANGE MISSING CARD
                 html += `
                 <div class="card" style="border-left: 5px solid orange; margin-bottom: 10px; cursor: pointer; background: #2a2015;" onclick="openMissingAttendance('${dateStr}')">
                     <div style="font-size: 14px; font-weight: bold; color: orange; display: flex; justify-content: space-between; align-items: center;">
@@ -1032,12 +1031,6 @@ async function submitTuitionOff() {
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.getElementById('tab-' + id).classList.add('active');
         }
-        function toggleHistory(el) {
-        const content = el.nextElementSibling;
-        content.classList.toggle('active');
-        const arrow = el.querySelector('.arrow');
-        if (arrow) arrow.innerText = content.classList.contains('active') ? '▲' : '▼';
-    }
         function switchView(v) {
             document.getElementById('view-home').classList.toggle('hidden', v !== 'home');
             document.getElementById('view-profile').classList.toggle('hidden', v !== 'profile');
