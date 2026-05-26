@@ -141,7 +141,7 @@
 
                     groupsHTML += `
                         <div style="background: #333; padding: 12px; margin-bottom: 10px; border-radius: 5px; cursor: pointer; border: 1px solid #444;"
-                             onclick="loadGroupDetails('${groupId}', '${groupName}')">
+                             onclick="loadGroupDetails('${groupId}', '${groupName}', '${uid}', '${userName}', '${userEmail}')">
                             <strong style="color: white; font-size: 16px;">📚 ${groupName}</strong><br>
                             <span style="color: #aaa; font-size: 13px;">Code: ${groupCode}</span>
                         </div>
@@ -155,10 +155,33 @@
                 groupViewer.innerHTML = `<p style="color: red;">Error loading groups.</p>`;
             }
         }
+        // FUNCTION 3: The Group Interior (Students & Attendance)
+        async function loadGroupDetails(groupId, groupName, uid, userName, userEmail) {
+            const groupViewer = document.getElementById('group-viewer');
+            
+            // Instantly build the UI shell with a Back button
+            groupViewer.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h4 style="color: cyan; margin: 0; font-size: 18px;">📚 ${groupName}</h4>
+                    <button onclick="loadUserGroups('${uid}', '${userName}', '${userEmail}')" style="background: #333; color: white; border: 1px solid #555; padding: 6px 12px; border-radius: 5px; cursor: pointer;">⬅ Back</button>
+                </div>
 
-        // FUNCTION 3: The placeholder for the next step
-        function loadGroupDetails(groupId, groupName) {
-            alert(`You clicked the group: ${groupName}\n\nNext, we will load the attendance and students!`);
+                <!-- Students Section -->
+                <div style="background: #2a2a2a; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
+                    <h5 style="color: #b388ff; margin: 0 0 10px 0; border-bottom: 1px solid #444; padding-bottom: 8px; font-size: 15px;">👥 Enrolled Students</h5>
+                    <div id="students-list">
+                        <p style="color: #888; font-size: 13px;">Fetching students...</p>
+                    </div>
+                </div>
+
+                <!-- Attendance Section -->
+                <div style="background: #2a2a2a; padding: 12px; border-radius: 8px;">
+                    <h5 style="color: var(--green, #4CAF50); margin: 0 0 10px 0; border-bottom: 1px solid #444; padding-bottom: 8px; font-size: 15px;">📅 Attendance Records</h5>
+                    <div id="attendance-list">
+                        <p style="color: #888; font-size: 13px;">Fetching attendance...</p>
+                    </div>
+                </div>
+            `;
         }
     </script>
 </body>
