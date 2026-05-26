@@ -60,9 +60,10 @@
         <div style="display: flex; flex-direction: column; gap: 20px; margin-top: 15px;">
             
             <div style="background: #222; padding: 15px; border-radius: 8px;">
-                <h3 style="color: var(--accent, cyan); margin-top: 0; margin-bottom: 15px;">Registered Tutors</h3>
+                <h3 style="color: cyan; margin-top: 0; margin-bottom: 10px;">Registered Tutors</h3>
                 
-                <div id="master-database-viewer" style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px;">
+                <!-- Notice there is NO 'overflow-x' or 'flex' here anymore! -->
+                <div id="master-database-viewer">
                     <p style="color: #888;">Fetching all accounts...</p>
                 </div>
             </div>
@@ -95,13 +96,12 @@
                     const userEmail = userData.email || "No Email";
                     const uid = doc.id; 
 
-                    // NEW CARD DESIGN: Fixed width so they line up perfectly left-to-right
+                    // Stacked vertical rows, no sliding!
                     const userCard = `
-                        <div style="background: #333; padding: 12px 8px; border-radius: 8px; cursor: pointer; border: 1px solid #444; min-width: 120px; max-width: 120px; flex-shrink: 0; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3);" 
+                        <div style="padding: 12px 0; border-bottom: 1px solid #333; cursor: pointer;" 
                              onclick="loadUserGroups('${uid}', '${userName}')">
-                            <div style="font-size: 26px; margin-bottom: 5px; color: cyan;">👤</div>
-                            <strong style="color: white; font-size: 14px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${userName}</strong>
-                            <span style="color: #aaa; font-size: 10px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px;">${userEmail}</span>
+                            <div style="color: white; font-size: 16px; margin-bottom: 3px;">${userName}</div>
+                            <div style="color: #aaa; font-size: 13px;">${userEmail}</div>
                         </div>
                     `;
                     viewer.innerHTML += userCard;
