@@ -9,8 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     
     <script>
-        // ⚠️ IMPORTANT: You still need to copy your Firebase keys from your index.html
-        // and paste them right here so this page can connect to your database!
+        // ⚠️ PASTE YOUR FIREBASE CONFIG KEYS HERE:
         const firebaseConfig = {
             apiKey: "AIzaSyDH9vfqKh16tka_14deuwWzYDQR-2TvR_U",
             authDomain: "tuituionhub.firebaseapp.com",
@@ -23,6 +22,9 @@
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
+        
+        // Initialize Database
+        const db = firebase.firestore();
     </script>
 </head>
 <body style="background: #111; color: white; font-family: sans-serif; padding: 20px;">
@@ -30,34 +32,97 @@
     <script>
         firebase.auth().onAuthStateChanged((user) => {
             if (user) {
-                // YOUR EXACT MASTER EMAIL:
                 const masterEmail = "ganeshthapa1420@gmail.com"; 
                 
                 if (user.email !== masterEmail) {
-                    // If it's Tutor A (or anyone else), kick them out immediately!
                     alert("ACCESS DENIED: Master Admin privileges required.");
                     window.location.href = "dashboard.html"; 
                 } else {
-                    // If it is YOU, unlock the page!
+                    // Unlock the page and trigger the Account Fetcher!
                     document.getElementById('vault-content').style.display = 'block';
                     document.getElementById('admin-email-display').innerText = user.email;
+                    loadAllAccounts(); // This is the new magic command!
                 }
             } else {
-                // If they aren't logged in at all, kick them to the login screen
                 window.location.href = "index.html"; 
             }
         });
     </script>
 
     <div id="vault-content" style="display: none;">
-        <h1 style="color: cyan;">Master Admin Dashboard</h1>
-        <p>Welcome, <span id="admin-email-display" style="color: yellow;"></span>.</p>
-        <p>You have full backend control. Other users cannot access this page.</p>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1 style="color: cyan; margin: 0;">Master Admin Dashboard</h1>
+            <button onclick="window.location.href='dashboard.html'" style="background: #333; color: white; border: none; padding: 10px; cursor: pointer; border-radius: 5px;">Exit Vault</button>
+        </div>
+        <p>Welcome, <span id="admin-email-display" style="color: yellow;"></span></p>
+        <hr style="border-color: #333;">
         
-        <div id="master-database-viewer" style="margin-top: 30px; padding: 15px; background: #222; border-radius: 8px;">
-            <p style="color: #888;">Fetching all accounts from Firebase...</p>
+        <div style="display: flex; gap: 20px; margin-top: 20px;">
+            <div style="flex: 1; background: #222; padding: 15px; border-radius: 8px; max-height: 80vh; overflow-y: auto;">
+                <h3 style="color: var(--accent, cyan); margin-top: 0;">Registered Tutors</h3>
+                <div id="master-database-viewer">
+                    <p style="color: #888;">Fetching all accounts from Firebase...</p>
+                </div>
+            </div>
+
+            <div style="flex: 2; background: #222; padding: 15px; border-radius: 8px;">
+                <h3 style="color: var(--green, #4CAF50); margin-top: 0;">Group Data</h3>
+                <div id="group-viewer">
+                    <p style="color: #888;">Click on a tutor to the left to view their groups and attendance records...</p>
+                </div>
+            </div>
         </div>
     </div>
+
+    <script>
+        async function loadAllAccounts() {
+            const viewer = document.getElementById('master-database-viewer');
+            viewer.innerHTML = ''; // Clear the "fetching" text
+            
+            try {
+                // Reach into the 'users' folder you just showed me
+                const snapshot = await db.collection('users').get();
+                
+                if (snapshot.empty) {
+                    viewer.innerHTML = '<p>No users found in database.</p>';
+                    return;
+                }
+
+                // Loop through every single user and create a button for them
+                snapshot.forEach(doc => {
+                    const userData = doc.data();
+                    const userName = userData.name || "Unknown Name";
+                    const userEmail = userData.email || "No Email";
+                    const uid = doc.id; // Their secret Firebase ID
+
+                    // Create a beautiful clickable card for each tutor
+                    const userCard = `
+                        <div style="background: #333; padding: 12px; margin-bottom: 10px; border-radius: 5px; cursor: pointer; border: 1px solid #444; transition: 0.2s;" 
+                             onmouseover="this.style.borderColor='cyan'" 
+                             onmouseout="this.style.borderColor='#444'"
+                             onclick="loadUserGroups('${uid}', '${userName}')">
+                            <strong style="color: white; font-size: 16px;">👤 ${userName}</strong><br>
+                            <span style="color: #aaa; font-size: 13px;">${userEmail}</span>
+                        </div>
+                    `;
+                    viewer.innerHTML += userCard;
+                });
+                
+            } catch (error) {
+                console.error("Error fetching users:", error);
+                viewer.innerHTML = '<p style="color: red;">Error loading accounts. Check console.</p>';
+            }
+        }
+
+        // Placeholder for the NEXT step when you click a tutor!
+        function loadUserGroups(uid, name) {
+            const groupViewer = document.getElementById('group-viewer');
+            groupViewer.innerHTML = `<p style="color: yellow;">Loading all groups for <b>${name}</b>...</p>`;
+            
+            // Just a temporary alert so you know the button works
+            alert(`You clicked ${name}!\n\nNext, we will code this to fetch ${name}'s specific groups.`);
+        }
+    </script>
 
 </body>
 </html>
