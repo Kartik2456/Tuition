@@ -78,47 +78,54 @@
     </div>
 
     <script>
-        async function loadAllAccounts() {
-            const viewer = document.getElementById('master-database-viewer');
-            viewer.innerHTML = ''; 
+       async function loadUserGroups(uid, userName) {
+            const groupViewer = document.getElementById('group-viewer');
+            groupViewer.innerHTML = `<p style="color: yellow;">Loading all groups for <b>${userName}</b>...</p>`;
             
             try {
-                const snapshot = await db.collection('users').get();
+                // This asks Firebase: "Find all groups where the 'owner' matches this exact user's UID"
+                const snapshot = await db.collection('groups').where('owner', '==', uid).get();
                 
                 if (snapshot.empty) {
-                    viewer.innerHTML = '<p>No users found.</p>';
+                    groupViewer.innerHTML = `
+                        <h4 style="color: white; margin-top: 0;">Groups for ${userName}</h4>
+                        <p style="color: #888;">This user hasn't created any groups yet.</p>
+                    `;
                     return;
                 }
 
+                // Start building the list of groups
+                let groupsHTML = `<h4 style="color: var(--green, #4CAF50); margin-top: 0; margin-bottom: 15px;">Groups for ${userName}</h4>`;
+                
+                // Loop through every group found and create a button for it
                 snapshot.forEach(doc => {
-                    const userData = doc.data();
-                    const userName = userData.name || "Unknown Name";
-                    const userEmail = userData.email || "No Email";
-                    const uid = doc.id; 
+                    const groupData = doc.data();
+                    const groupName = groupData.name || "Unnamed Group";
+                    const groupCode = groupData.code || "No Code";
+                    const groupId = doc.id;
 
-                    // Stacked vertical rows, no sliding!
-                    const userCard = `
-                        <div style="padding: 12px 0; border-bottom: 1px solid #333; cursor: pointer;" 
-                             onclick="loadUserGroups('${uid}', '${userName}')">
-                            <div style="color: white; font-size: 16px; margin-bottom: 3px;">${userName}</div>
-                            <div style="color: #aaa; font-size: 13px;">${userEmail}</div>
+                    // Create a clickable card for each group
+                    groupsHTML += `
+                        <div style="background: #333; padding: 12px; margin-bottom: 10px; border-radius: 5px; cursor: pointer; border: 1px solid #444;"
+                             onclick="loadGroupDetails('${groupId}', '${groupName}')">
+                            <strong style="color: white; font-size: 16px;">📚 ${groupName}</strong><br>
+                            <span style="color: #aaa; font-size: 13px;">Code: ${groupCode}</span>
                         </div>
                     `;
-                    viewer.innerHTML += userCard;
                 });
                 
+                // Display the groups on the screen!
+                groupViewer.innerHTML = groupsHTML;
+
             } catch (error) {
-                console.error("Error fetching users:", error);
-                viewer.innerHTML = '<p style="color: red;">Error loading accounts.</p>';
+                console.error("Error fetching groups:", error);
+                groupViewer.innerHTML = `<p style="color: red;">Error loading groups.</p>`;
             }
         }
 
-        function loadUserGroups(uid, name) {
-            const groupViewer = document.getElementById('group-viewer');
-            groupViewer.innerHTML = `<p style="color: yellow;">Loading all groups for <b>${name}</b>...</p>`;
-            
-            // Temporary alert
-            alert(`You tapped ${name}!\n\nNext, we code this to load their specific data.`);
+        // The NEXT step for when you click a specific group!
+        function loadGroupDetails(groupId, groupName) {
+            alert(`You clicked the group: ${groupName}\n\nNext, we will load the attendance and students for this specific group!`);
         }
     </script>
 
