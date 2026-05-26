@@ -517,16 +517,30 @@
         }
 
         async function checkTodayAttendance() {
-            const today = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
-            const btn = document.getElementById('submit-att-btn');
-            const snapshot = await db.collection('attendance').where('groupId', '==', activeGroupID).where('date', '==', today).get();
-            
-            if (!snapshot.empty && isAdmin) {
-                btn.innerText = "Submitted"; btn.style.background = "#333"; btn.disabled = true;
-            } else if (isAdmin) {
-                btn.innerText = "Submit"; btn.style.background = "var(--green)"; btn.disabled = false;
-            }
-        }
+    const today = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
+    const btn = document.getElementById('submit-att-btn');
+    
+    // Grab the Tuition Off buttons so we can control them
+    const tuitionOffBtn = document.getElementById('btn-tuition-off');
+    const tuitionOffContainer = document.getElementById('tuition-off-container');
+    
+    const snapshot = await db.collection('attendance').where('groupId', '==', activeGroupID).where('date', '==', today).get();
+
+    if (!snapshot.empty && isAdmin) {
+        // Attendance IS done: Lock Submit AND Hide Tuition Off
+        btn.innerText = "Submitted"; 
+        btn.style.background = "#333"; 
+        btn.disabled = true;
+        if (tuitionOffBtn) tuitionOffBtn.style.display = 'none';
+        if (tuitionOffContainer) tuitionOffContainer.style.display = 'none';
+    } else if (isAdmin) {
+        // Attendance IS NOT done: Unlock Submit AND Show Tuition Off
+        btn.innerText = "Submit"; 
+        btn.style.background = "var(--green)"; 
+        btn.disabled = false;
+        if (tuitionOffBtn) tuitionOffBtn.style.display = 'block';
+    }
+}
 
         async function loadData() {
             const today = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
