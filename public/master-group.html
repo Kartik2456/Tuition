@@ -206,7 +206,13 @@
                 let attData = [];
                 snapshot.forEach(doc => attData.push({ id: doc.id, ...doc.data() }));
 
-                attData.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                // Smart sort: Convert
+                // s DD-MM-YYYY into YYYYMMDD so it forces perfect calendar order!
+                attData.sort((a, b) => {
+                    const dateA = a.date.split('-').reverse().join(''); 
+                    const dateB = b.date.split('-').reverse().join(''); 
+                    return dateB.localeCompare(dateA); // Puts newest calendar dates at the top
+                });
 
                 let html = "";
                 if(attData.length === 0) {
