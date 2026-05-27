@@ -9,7 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
     
     <script>
-       const firebaseConfig = {
+        const firebaseConfig = {
             apiKey: "AIzaSyDH9vfqKh16tka_14deuwWzYDQR-2TvR_U",
             authDomain: "tuituionhub.firebaseapp.com",
             projectId: "tuituionhub",
@@ -42,7 +42,7 @@
         
         .btn-edit { background: var(--godmode); color: black; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; margin-right: 5px;}
         .btn-delete { background: var(--red); color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;}
-        input { background: #2c2c2c; border: 1px solid #444; color: white; padding: 6px; border-radius: 4px; width: 80px;}
+        input, select { background: #2c2c2c; border: 1px solid #444; color: white; padding: 6px; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -93,9 +93,31 @@
             </div>
 
             <div id="section-fees" class="section">
-                <div class="card">
-                    <h3 style="color: var(--godmode);">Fees Override</h3>
-                    <p style="color: #aaa;">This section is under construction for Phase 3. Here you will be able to rewrite submitted fee dates.</p>
+                <div class="card" style="border: 1px dashed var(--godmode); background: #1a1a1a;">
+                    <h3 style="color: var(--godmode); margin-top: 0;">💰 Master Fees Log</h3>
+                    <p style="color: #aaa; font-size: 13px;">Rewrite submission dates or mark paid students as pending.</p>
+                    
+                    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                        <select id="masterFeeMonth" onchange="loadMasterFees()" style="flex: 1; padding: 10px;">
+                            <option value="0">January</option>
+                            <option value="1">February</option>
+                            <option value="2">March</option>
+                            <option value="3">April</option>
+                            <option value="4">May</option>
+                            <option value="5">June</option>
+                            <option value="6">July</option>
+                            <option value="7">August</option>
+                            <option value="8">September</option>
+                            <option value="9">October</option>
+                            <option value="10">November</option>
+                            <option value="11">December</option>
+                        </select>
+                        <input type="number" id="masterFeeYear" onchange="loadMasterFees()" style="width: 80px; text-align: center; padding: 10px;">
+                    </div>
+
+                    <div id="master-fees-list">
+                        <p>Loading fees...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -104,6 +126,7 @@
     <script>
         let currentGroupId = null;
 
+        // Toggles between the three screens
         function showSection(id) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.getElementById('section-' + id).classList.add('active');
@@ -123,12 +146,16 @@
             }
 
             document.getElementById('activeGroupName').innerText = groupName + " 👑";
+            
+            // Boot up all 3 systems
             loadStudents();
-            loadMasterAttendance(); // Triggers Phase 2!
+            loadMasterAttendance(); 
+            initFeesTab(); 
+            loadMasterFees();
         }
 
         // ==========================================
-        // PHASE 1: STUDENT EDITING POWERS
+        // PHASE 1: STUDENTS
         // ==========================================
         async function loadStudents() {
             const home = document.getElementById('homeList');
@@ -137,97 +164,78 @@
             try {
                 const snapshot = await db.collection('students').where('groupId', '==', currentGroupId).get();
                 let studentsArray = []; 
-
-                snapshot.forEach(doc => {
-                    studentsArray.push({ id: doc.id, ...doc.data() });
-                });
-
+                snapshot.forEach(doc => { studentsArray.push({ id: doc.id, ...doc.data() }); });
                 studentsArray.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
                 
                 home.innerHTML = "";
                 studentsArray.forEach((s, index) => {
                     const rollNo = index + 1; 
-                    
                     home.innerHTML += `
                         <tr id="row-${s.id}">
                             <td>${rollNo}</td>
-                            <td><input type="text" id="name-${s.id}" value="${s.name}"></td>
+                            <td><input type="text" id="name-${s.id}" value="${s.name}" style="width: 100px;"></td>
                             <td><input type="text" id="class-${s.id}" value="${s.class}" style="width: 50px;"></td>
                             <td><input type="date" id="date-${s.id}" value="${s.admissionDate}"></td>
                             <td>
                                 <button class="btn-edit" onclick="saveStudentEdit('${s.id}')">💾 Save</button>
-                                <button class="btn-delete" onclick="masterDeleteStudent('${s.id}', '${s.name}')">🗑️ Del</button>
+                                <button class="btn-delete" onclick="masterDeleteStudent('${s.id}', '${s.name}')">🗑️</button>
                             </td>
                         </tr>
                     `;
                 });
-
-                if(studentsArray.length === 0) {
-                    home.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No students enrolled in this batch.</td></tr>";
-                }
-            } catch (e) {
-                console.error(e);
-                home.innerHTML = "<tr><td colspan='5' style='color:red;'>Failed to fetch students.</td></tr>";
-            }
+                if(studentsArray.length === 0) home.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No students.</td></tr>";
+            } catch (e) { home.innerHTML = "<tr><td colspan='5' style='color:red;'>Error fetching students.</td></tr>"; }
         }
 
         async function saveStudentEdit(studentId) {
             const newName = document.getElementById(`name-${studentId}`).value;
             const newClass = document.getElementById(`class-${studentId}`).value;
             const newDate = document.getElementById(`date-${studentId}`).value;
-
             try {
-                await db.collection('students').doc(studentId).update({
-                    name: newName,
-                    class: newClass,
-                    admissionDate: newDate
-                });
-                alert("Student successfully updated!");
-            } catch (e) { alert("Failed to update student."); console.error(e); }
+                await db.collection('students').doc(studentId).update({ name: newName, class: newClass, admissionDate: newDate });
+                alert("Student updated!");
+            } catch (e) { alert("Failed to update."); }
         }
 
         async function masterDeleteStudent(studentId, studentName) {
-            if(confirm(`GOD MODE ACTION:\nAre you absolutely sure you want to permanently delete ${studentName}? This cannot be undone.`)) {
+            if(confirm(`Delete ${studentName}? This cannot be undone.`)) {
                 try {
                     await db.collection('students').doc(studentId).delete();
                     document.getElementById(`row-${studentId}`).remove(); 
-                } catch (e) { alert("Failed to delete student."); }
+                } catch (e) { alert("Failed to delete."); }
             }
         }
 
         // ==========================================
-        // PHASE 2: ATTENDANCE EDITING POWERS
+        // PHASE 2: ATTENDANCE
         // ==========================================
         async function loadMasterAttendance() {
             const attList = document.getElementById('master-attendance-list');
-            
             try {
                 const snapshot = await db.collection('attendance').where('groupId', '==', currentGroupId).get();
                 let attData = [];
                 snapshot.forEach(doc => attData.push({ id: doc.id, ...doc.data() }));
 
-                // Smart sort: Convert
-                // s DD-MM-YYYY into YYYYMMDD so it forces perfect calendar order!
+                // The fixed date sorter!
                 attData.sort((a, b) => {
                     const dateA = a.date.split('-').reverse().join(''); 
                     const dateB = b.date.split('-').reverse().join(''); 
-                    return dateB.localeCompare(dateA); // Puts newest calendar dates at the top
+                    return dateB.localeCompare(dateA); 
                 });
 
                 let html = "";
                 if(attData.length === 0) {
-                    attList.innerHTML = "<p style='color: #888;'>No attendance records found for this batch.</p>";
+                    attList.innerHTML = "<p style='color: #888;'>No attendance records found.</p>";
                     return;
                 }
 
                 attData.forEach(data => {
                     const dayText = data.day ? ` (${data.day})` : '';
-                    
                     html += `
                     <div style="background: #222; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid var(--godmode);">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px;">
                             <strong style="color: var(--godmode); font-size: 16px;">${data.date}${dayText}</strong>
-                            <button class="btn-delete" onclick="masterDeleteAttendance('${data.id}', '${data.date}')">🗑️ Delete Entire Day</button>
+                            <button class="btn-delete" onclick="masterDeleteAttendance('${data.id}', '${data.date}')">🗑️ Delete Day</button>
                         </div>
                     `;
 
@@ -246,7 +254,6 @@
                             const isP = r.status === 'Present' ? 'selected' : '';
                             const isA = r.status === 'Absent' ? 'selected' : '';
                             let statusColor = r.status === 'Present' ? 'var(--green)' : 'var(--red)';
-                            
                             html += `
                             <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #333;">
                                 <span style="font-size: 15px;">${r.name}</span>
@@ -258,17 +265,13 @@
                         });
                         html += `
                         <div style="margin-top: 15px; text-align: right;">
-                            <button class="btn-edit" onclick="masterSaveAttendance('${data.id}')">💾 Save Attendance Changes</button>
+                            <button class="btn-edit" onclick="masterSaveAttendance('${data.id}')">💾 Save Changes</button>
                         </div></div>`;
                     }
                     html += `</div>`;
                 });
-                
                 attList.innerHTML = html;
-            } catch (e) {
-                console.error(e);
-                attList.innerHTML = "<p style='color:red;'>Failed to fetch attendance.</p>";
-            }
+            } catch (e) { attList.innerHTML = "<p style='color:red;'>Error fetching attendance.</p>"; }
         }
 
         async function masterSaveAttendance(docId) {
@@ -282,27 +285,120 @@
                     const newStatus = document.getElementById(`status-${docId}-${idx}`).value;
                     updatedRecords.push({ name: r.name, status: newStatus });
                 });
-
                 await docRef.update({ records: updatedRecords });
-                alert("Attendance successfully updated!");
+                alert("Attendance updated!");
                 loadMasterAttendance(); 
-            } catch (e) { alert("Failed to update attendance."); console.error(e); }
+            } catch (e) { alert("Failed to update."); }
         }
 
         async function masterSaveOff(docId) {
             const newReason = document.getElementById(`reason-${docId}`).value;
             try {
                 await db.collection('attendance').doc(docId).update({ reason: newReason });
-                alert("Tuition Off reason updated!");
-            } catch (e) { alert("Failed to update reason."); }
+                alert("Reason updated!");
+            } catch (e) { alert("Failed to update."); }
         }
 
         async function masterDeleteAttendance(docId, date) {
-            if(confirm(`GOD MODE ACTION:\nAre you sure you want to delete the attendance record for ${date}? This will unlock that date for the tutors to submit again.`)) {
+            if(confirm(`Delete attendance for ${date}?`)) {
                 try {
                     await db.collection('attendance').doc(docId).delete();
                     loadMasterAttendance(); 
-                } catch (e) { alert("Failed to delete record."); }
+                } catch (e) { alert("Failed to delete."); }
+            }
+        }
+
+        // ==========================================
+        // PHASE 3: FEES
+        // ==========================================
+        function initFeesTab() {
+            const d = new Date();
+            document.getElementById('masterFeeMonth').value = d.getMonth();
+            document.getElementById('masterFeeYear').value = d.getFullYear();
+        }
+
+        async function loadMasterFees() {
+            const feesList = document.getElementById('master-fees-list');
+            const selectedMonth = parseInt(document.getElementById('masterFeeMonth').value);
+            const selectedYear = parseInt(document.getElementById('masterFeeYear').value);
+
+            feesList.innerHTML = "<p>Loading fees...</p>";
+
+            try {
+                const stuSnap = await db.collection('students').where('groupId', '==', currentGroupId).get();
+                let students = [];
+                stuSnap.forEach(doc => students.push({ id: doc.id, name: doc.data().name }));
+                students.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+
+                const feeSnap = await db.collection('fees')
+                    .where('groupId', '==', currentGroupId)
+                    .where('year', '==', selectedYear)
+                    .where('month', '==', selectedMonth)
+                    .get();
+
+                let paidMap = {};
+                feeSnap.forEach(doc => { paidMap[doc.data().studentId] = doc.data().paidDate; });
+
+                let html = "";
+                students.forEach((s, idx) => {
+                    const isPaid = paidMap[s.id];
+                    const dateVal = isPaid ? isPaid : '';
+                    const statusText = isPaid 
+                        ? `<span style="color: var(--green); font-weight: bold; font-size: 12px;">PAID</span>` 
+                        : `<span style="color: var(--red); font-weight: bold; font-size: 12px;">PENDING</span>`;
+
+                    html += `
+                    <div style="background: #222; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid ${isPaid ? 'var(--green)' : 'var(--red)'}; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;">
+                        <div style="min-width: 150px;">
+                            <strong style="color: white; font-size: 15px;">${idx + 1}. ${s.name}</strong><br>
+                            ${statusText}
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <input type="date" id="feeDate-${s.id}" value="${dateVal}" style="color-scheme: dark;">
+                            <button class="btn-edit" onclick="masterSaveFee('${s.id}')">💾 Update</button>
+                            <button class="btn-delete" onclick="masterDeleteFee('${s.id}', '${s.name}')">❌ Revert</button>
+                        </div>
+                    </div>`;
+                });
+
+                if(students.length === 0) html = "<p style='color: #888;'>No students.</p>";
+                feesList.innerHTML = html;
+            } catch (error) { feesList.innerHTML = "<p style='color:red;'>Failed to load fees.</p>"; }
+        }
+
+        async function masterSaveFee(studentId) {
+            const selectedMonth = parseInt(document.getElementById('masterFeeMonth').value);
+            const selectedYear = parseInt(document.getElementById('masterFeeYear').value);
+            const dateVal = document.getElementById(`feeDate-${studentId}`).value;
+
+            if (!dateVal) return alert("Please pick a date first!");
+            const uniqueFeeId = `${currentGroupId}_${studentId}_${selectedYear}_${selectedMonth}`;
+
+            try {
+                await db.collection('fees').doc(uniqueFeeId).set({
+                    groupId: currentGroupId,
+                    studentId: studentId,
+                    year: selectedYear,
+                    month: selectedMonth,
+                    paidDate: dateVal,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                alert("Fee record forced!");
+                loadMasterFees(); 
+            } catch (e) { alert("Failed to save."); }
+        }
+
+        async function masterDeleteFee(studentId, studentName) {
+            const selectedMonth = parseInt(document.getElementById('masterFeeMonth').value);
+            const selectedYear = parseInt(document.getElementById('masterFeeYear').value);
+            const uniqueFeeId = `${currentGroupId}_${studentId}_${selectedYear}_${selectedMonth}`;
+
+            if(confirm(`Revert ${studentName} to PENDING?`)) {
+                try {
+                    await db.collection('fees').doc(uniqueFeeId).delete();
+                    loadMasterFees(); 
+                } catch (e) { alert("Failed to revert."); }
             }
         }
     </script>
