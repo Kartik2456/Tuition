@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Admin | God Mode</title>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
+    
+    <script>
+       const firebaseConfig = {
+            apiKey: "AIzaSyDH9vfqKh16tka_14deuwWzYDQR-2TvR_U",
+            authDomain: "tuituionhub.firebaseapp.com",
+            projectId: "tuituionhub",
+            storageBucket: "tuituionhub.firebasestorage.app",
+            messagingSenderId: "373410141090",
+            appId: "1:373410141090:web:45144c02501738c31798fb",
+            measurementId: "G-XPS2L1NZ2V"
+        };
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+    </script>
+
+    <style>
+        /* Exact copy of your dashboard styles so it looks identical */
+        :root { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --accent: #bb86fc; --green: #03dac6; --red: #cf6679; --godmode: #ffb300; }
+        body { background-color: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 80px; }
+        .hidden { display: none !important; }
+        .section { display: none; }
+        .section.active { display: block; }
+        .navbar { background: #1f1b24; display: flex; justify-content: space-around; padding: 15px; border-bottom: 2px solid var(--godmode); position: sticky; top: 0; z-index: 100; align-items: center;}
+        .nav-item { color: var(--accent); font-weight: bold; cursor: pointer; padding: 8px 12px; border-radius: 8px; font-size: 14px;}
+        .nav-item.active { background: #332940; color: white; box-shadow: 0 0 10px var(--godmode); }
+        .container { max-width: 1000px; margin: 20px auto; padding: 0 20px; }
+        .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #333; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 400px; }
+        th, td { padding: 12px 8px; text-align: left; border-bottom: 1px solid #333; white-space: nowrap; }
+        th { color: var(--godmode); font-size: 13px; text-transform: uppercase; }
+        
+        /* God Mode specific buttons */
+        .btn-edit { background: var(--godmode); color: black; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; margin-right: 5px;}
+        .btn-delete { background: var(--red); color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;}
+        input { background: #2c2c2c; border: 1px solid #444; color: white; padding: 6px; border-radius: 4px; width: 80px;}
+    </style>
+</head>
+<body>
+
+    <script>
+        auth.onAuthStateChanged((user) => {
+            if (!user || user.email !== "ganeshthapa1420@gmail.com") {
+                alert("ACCESS DENIED: Master Admin privileges required.");
+                window.location.href = "dashboard.html"; 
+            } else {
+                document.getElementById('main-ui').classList.remove('hidden');
+                startGodMode();
+            }
+        });
+    </script>
+
+    <div id="main-ui" class="hidden">
+        <div class="navbar">
+            <button onclick="window.location.href='superadmin.html'" style="background: #333; color: white; border: 1px solid #555; padding: 6px 12px; border-radius: 5px; cursor: pointer;">⬅ Vault</button>
+            <div class="nav-item active" id="tab-students" onclick="showSection('students')">Students</div>
+            <div class="nav-item" id="tab-attendance" onclick="showSection('attendance')">Attendance</div>
+            <div class="nav-item" id="tab-fees" onclick="showSection('fees')">Fees Status</div>
+        </div>
+
+        <div class="container">
+            <h2 id="activeGroupName" style="color: var(--godmode); margin-bottom: 5px;">Loading...</h2>
+            <p style="color: #888; margin-top: 0; margin-bottom: 20px; font-size: 14px;">Master Admin override active.</p>
+
+            <div id="section-students" class="section active">
+                <div class="card">
+                    <table>
+                        <thead><tr><th>Roll</th><th>Name</th><th>Class</th><th>Date</th><th>Master Actions</th></tr></thead>
+                        <tbody id="homeList">
+                            <tr><td colspan="5">Fetching students...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="section-attendance" class="section">
+                <div class="card">
+                    <h3 style="color: var(--godmode);">Attendance Override</h3>
+                    <p style="color: #aaa;">This section is under construction for Phase 2. Here you will be able to alter locked attendance records.</p>
+                </div>
+            </div>
+
+            <div id="section-fees" class="section">
+                <div class="card">
+                    <h3 style="color: var(--godmode);">Fees Override</h3>
+                    <p style="color: #aaa;">This section is under construction for Phase 3. Here you will be able to rewrite submitted fee dates.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentGroupId = null;
+
+        function showSection(id) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById('section-' + id).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('tab-' + id).classList.add('active');
+        }
+
+        async function startGodMode() {
+            // 1. Grab the exact group data out of the URL that your Vault sent over!
+            const urlParams = new URLSearchParams(window.location.search);
+            currentGroupId = urlParams.get('groupId');
+            const groupName = urlParams.get('groupName');
+
+            if (!currentGroupId) {
+                alert("Error: No group selected. Returning to Vault.");
+                window.location.href = 'superadmin.html';
+                return;
+            }
+
+            document.getElementById('activeGroupName').innerText = groupName + " 👑";
+            loadStudents();
+        }
+
+        // ==========================================
+        // PHASE 1: STUDENT EDITING POWERS
+        // ==========================================
+        async function loadStudents() {
+            const home = document.getElementById('homeList');
+            home.innerHTML = "<tr><td colspan='5'>Loading...</td></tr>";
+
+            try {
+                const snapshot = await db.collection('students').where('groupId', '==', currentGroupId).get();
+                let studentsArray = []; 
+
+                snapshot.forEach(doc => {
+                    studentsArray.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Alphabetical sort just like your real app
+                studentsArray.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+                
+                home.innerHTML = "";
+                studentsArray.forEach((s, index) => {
+                    const rollNo = index + 1; 
+                    
+                    // Notice how the data is inside INPUT boxes so you can type directly into them!
+                    home.innerHTML += `
+                        <tr id="row-${s.id}">
+                            <td>${rollNo}</td>
+                            <td><input type="text" id="name-${s.id}" value="${s.name}"></td>
+                            <td><input type="text" id="class-${s.id}" value="${s.class}" style="width: 50px;"></td>
+                            <td><input type="date" id="date-${s.id}" value="${s.admissionDate}"></td>
+                            <td>
+                                <button class="btn-edit" onclick="saveStudentEdit('${s.id}')">💾 Save</button>
+                                <button class="btn-delete" onclick="masterDeleteStudent('${s.id}', '${s.name}')">🗑️ Del</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                if(studentsArray.length === 0) {
+                    home.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No students enrolled in this batch.</td></tr>";
+                }
+            } catch (e) {
+                console.error(e);
+                home.innerHTML = "<tr><td colspan='5' style='color:red;'>Failed to fetch students.</td></tr>";
+            }
+        }
+
+        async function saveStudentEdit(studentId) {
+            const newName = document.getElementById(`name-${studentId}`).value;
+            const newClass = document.getElementById(`class-${studentId}`).value;
+            const newDate = document.getElementById(`date-${studentId}`).value;
+
+            try {
+                await db.collection('students').doc(studentId).update({
+                    name: newName,
+                    class: newClass,
+                    admissionDate: newDate
+                });
+                alert("Student successfully updated in the database!");
+            } catch (e) {
+                alert("Failed to update student.");
+                console.error(e);
+            }
+        }
+
+        async function masterDeleteStudent(studentId, studentName) {
+            if(confirm(`GOD MODE ACTION:\nAre you absolutely sure you want to permanently delete ${studentName}? This cannot be undone.`)) {
+                try {
+                    await db.collection('students').doc(studentId).delete();
+                    // Instantly remove the row from the screen without reloading
+                    document.getElementById(`row-${studentId}`).remove(); 
+                } catch (e) {
+                    alert("Failed to delete student.");
+                }
+            }
+        }
+    </script>
+</body>
+</html>
