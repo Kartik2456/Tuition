@@ -26,7 +26,6 @@
     </script>
 
     <style>
-        /* Exact copy of your dashboard styles so it looks identical */
         :root { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --accent: #bb86fc; --green: #03dac6; --red: #cf6679; --godmode: #ffb300; }
         body { background-color: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 80px; }
         .hidden { display: none !important; }
@@ -41,7 +40,6 @@
         th, td { padding: 12px 8px; text-align: left; border-bottom: 1px solid #333; white-space: nowrap; }
         th { color: var(--godmode); font-size: 13px; text-transform: uppercase; }
         
-        /* God Mode specific buttons */
         .btn-edit { background: var(--godmode); color: black; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; margin-right: 5px;}
         .btn-delete { background: var(--red); color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;}
         input { background: #2c2c2c; border: 1px solid #444; color: white; padding: 6px; border-radius: 4px; width: 80px;}
@@ -85,9 +83,12 @@
             </div>
 
             <div id="section-attendance" class="section">
-                <div class="card">
-                    <h3 style="color: var(--godmode);">Attendance Override</h3>
-                    <p style="color: #aaa;">This section is under construction for Phase 2. Here you will be able to alter locked attendance records.</p>
+                <div class="card" style="border: 1px dashed var(--godmode); background: #1a1a1a;">
+                    <h3 style="color: var(--godmode); margin-top: 0;">📅 Master Attendance Log</h3>
+                    <p style="color: #aaa; font-size: 13px;">Edit statuses or completely delete a locked day.</p>
+                    <div id="master-attendance-list">
+                        <p>Fetching all attendance records...</p>
+                    </div>
                 </div>
             </div>
 
@@ -111,7 +112,6 @@
         }
 
         async function startGodMode() {
-            // 1. Grab the exact group data out of the URL that your Vault sent over!
             const urlParams = new URLSearchParams(window.location.search);
             currentGroupId = urlParams.get('groupId');
             const groupName = urlParams.get('groupName');
@@ -124,6 +124,7 @@
 
             document.getElementById('activeGroupName').innerText = groupName + " 👑";
             loadStudents();
+            loadMasterAttendance(); // Triggers Phase 2!
         }
 
         // ==========================================
@@ -141,14 +142,12 @@
                     studentsArray.push({ id: doc.id, ...doc.data() });
                 });
 
-                // Alphabetical sort just like your real app
                 studentsArray.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
                 
                 home.innerHTML = "";
                 studentsArray.forEach((s, index) => {
                     const rollNo = index + 1; 
                     
-                    // Notice how the data is inside INPUT boxes so you can type directly into them!
                     home.innerHTML += `
                         <tr id="row-${s.id}">
                             <td>${rollNo}</td>
@@ -183,22 +182,121 @@
                     class: newClass,
                     admissionDate: newDate
                 });
-                alert("Student successfully updated in the database!");
-            } catch (e) {
-                alert("Failed to update student.");
-                console.error(e);
-            }
+                alert("Student successfully updated!");
+            } catch (e) { alert("Failed to update student."); console.error(e); }
         }
 
         async function masterDeleteStudent(studentId, studentName) {
             if(confirm(`GOD MODE ACTION:\nAre you absolutely sure you want to permanently delete ${studentName}? This cannot be undone.`)) {
                 try {
                     await db.collection('students').doc(studentId).delete();
-                    // Instantly remove the row from the screen without reloading
                     document.getElementById(`row-${studentId}`).remove(); 
-                } catch (e) {
-                    alert("Failed to delete student.");
+                } catch (e) { alert("Failed to delete student."); }
+            }
+        }
+
+        // ==========================================
+        // PHASE 2: ATTENDANCE EDITING POWERS
+        // ==========================================
+        async function loadMasterAttendance() {
+            const attList = document.getElementById('master-attendance-list');
+            
+            try {
+                const snapshot = await db.collection('attendance').where('groupId', '==', currentGroupId).get();
+                let attData = [];
+                snapshot.forEach(doc => attData.push({ id: doc.id, ...doc.data() }));
+
+                attData.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+                let html = "";
+                if(attData.length === 0) {
+                    attList.innerHTML = "<p style='color: #888;'>No attendance records found for this batch.</p>";
+                    return;
                 }
+
+                attData.forEach(data => {
+                    const dayText = data.day ? ` (${data.day})` : '';
+                    
+                    html += `
+                    <div style="background: #222; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid var(--godmode);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px;">
+                            <strong style="color: var(--godmode); font-size: 16px;">${data.date}${dayText}</strong>
+                            <button class="btn-delete" onclick="masterDeleteAttendance('${data.id}', '${data.date}')">🗑️ Delete Entire Day</button>
+                        </div>
+                    `;
+
+                    if (data.isOff) {
+                        html += `
+                        <div style="background: #1a1a1a; padding: 10px; border-radius: 6px;">
+                            <span style="color: var(--red); font-weight: bold; font-size: 12px; background: rgba(207, 102, 121, 0.2); padding: 3px 6px; border-radius: 3px;">TUITION OFF</span><br>
+                            <div style="margin-top: 10px; display: flex; gap: 10px;">
+                                <input type="text" id="reason-${data.id}" value="${data.reason}" style="flex: 1;">
+                                <button class="btn-edit" onclick="masterSaveOff('${data.id}')">💾 Update Reason</button>
+                            </div>
+                        </div>`;
+                    } else {
+                        html += `<div style="background: #1a1a1a; padding: 10px; border-radius: 6px;">`;
+                        data.records.forEach((r, idx) => {
+                            const isP = r.status === 'Present' ? 'selected' : '';
+                            const isA = r.status === 'Absent' ? 'selected' : '';
+                            let statusColor = r.status === 'Present' ? 'var(--green)' : 'var(--red)';
+                            
+                            html += `
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #333;">
+                                <span style="font-size: 15px;">${r.name}</span>
+                                <select id="status-${data.id}-${idx}" style="background: #111; color: ${statusColor}; border: 1px solid #444; padding: 6px; border-radius: 4px; font-weight: bold;">
+                                    <option value="Present" style="color: var(--green);" ${isP}>Present</option>
+                                    <option value="Absent" style="color: var(--red);" ${isA}>Absent</option>
+                                </select>
+                            </div>`;
+                        });
+                        html += `
+                        <div style="margin-top: 15px; text-align: right;">
+                            <button class="btn-edit" onclick="masterSaveAttendance('${data.id}')">💾 Save Attendance Changes</button>
+                        </div></div>`;
+                    }
+                    html += `</div>`;
+                });
+                
+                attList.innerHTML = html;
+            } catch (e) {
+                console.error(e);
+                attList.innerHTML = "<p style='color:red;'>Failed to fetch attendance.</p>";
+            }
+        }
+
+        async function masterSaveAttendance(docId) {
+            try {
+                const docRef = db.collection('attendance').doc(docId);
+                const docSnap = await docRef.get();
+                let data = docSnap.data();
+                
+                let updatedRecords = [];
+                data.records.forEach((r, idx) => {
+                    const newStatus = document.getElementById(`status-${docId}-${idx}`).value;
+                    updatedRecords.push({ name: r.name, status: newStatus });
+                });
+
+                await docRef.update({ records: updatedRecords });
+                alert("Attendance successfully updated!");
+                loadMasterAttendance(); 
+            } catch (e) { alert("Failed to update attendance."); console.error(e); }
+        }
+
+        async function masterSaveOff(docId) {
+            const newReason = document.getElementById(`reason-${docId}`).value;
+            try {
+                await db.collection('attendance').doc(docId).update({ reason: newReason });
+                alert("Tuition Off reason updated!");
+            } catch (e) { alert("Failed to update reason."); }
+        }
+
+        async function masterDeleteAttendance(docId, date) {
+            if(confirm(`GOD MODE ACTION:\nAre you sure you want to delete the attendance record for ${date}? This will unlock that date for the tutors to submit again.`)) {
+                try {
+                    await db.collection('attendance').doc(docId).delete();
+                    loadMasterAttendance(); 
+                } catch (e) { alert("Failed to delete record."); }
             }
         }
     </script>
