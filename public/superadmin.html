@@ -24,27 +24,35 @@
         }
         
         // Initialize Database
-        const db = firebase.firestore();
+        const db = firebase.firestore();    
     </script>
 </head>
 <body style="background: #111; color: white; font-family: sans-serif; padding: 20px;">
 
-    <script>
+   <script>
         firebase.auth().onAuthStateChanged((user) => {
-            if (user) {
-                const masterEmail = "ganeshthapa1420@gmail.com"; 
+            // If they aren't logged in, OR their email isn't yours... BOOT THEM!
+            if (!user || user.email !== "ganeshthapa1420@gmail.com") {
                 
-                if (user.email !== masterEmail) {
-                    alert("ACCESS DENIED: Master Admin privileges required.");
-                    window.location.href = "dashboard.html"; 
-                } else {
-                    // Unlock the page and trigger the Account Fetcher!
-                    document.getElementById('vault-content').style.display = 'block';
-                    document.getElementById('admin-email-display').innerText = user.email;
-                    loadAllAccounts(); // This is the new magic command!
-                }
+                // Instantly wipes the screen so they can't read your database
+                document.body.innerHTML = `
+                    <div style="background: black; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; color: red; font-family: sans-serif;">
+                        <h1 style="font-size: 50px; margin: 0;">🛑</h1>
+                        <h1>ACCESS DENIED</h1>
+                        <p style="color: #888;">Master Admin privileges required. Intrusion logged.</p>
+                    </div>
+                `;
+                
+                // Kicks them back to the normal app after 3 seconds
+                setTimeout(() => {
+                    window.location.href = "dashboard.html";
+                }, 3000);
+                
             } else {
-                window.location.href = "index.html"; 
+                // IF IT IS YOU, UNLOCK THE VAULT!
+                document.getElementById('vault-content').style.display = 'block';
+                document.getElementById('admin-email-display').innerText = user.email;
+                loadAllAccounts(); 
             }
         });
     </script>

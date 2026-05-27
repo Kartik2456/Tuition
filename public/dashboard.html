@@ -260,7 +260,7 @@
                     <!-- Moved Switch Batch Button Here -->
                     <button onclick="exitGroup()" style="background: #332940; color: white; border: 1px solid var(--accent); width: 100%; margin-bottom: 15px;">Switch Batch</button>
                     <button onclick="handleLogout()" style="background: var(--red); color: white; width: 100%;">Logout Account</button>
-                    <button id="btn-super-admin" onclick="window.location.href='superadmin.html'" style="display: none; background: purple; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px;">
+                    <button id="btn-super-admin" onclick="checkMasterPassword()" style="display: none; background: purple; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px;">
     ⚙️ Master Control
 </button>
                 </div>
@@ -1141,13 +1141,20 @@ async function calculateRangeSummary() {
         summaryList.innerHTML = "<tr><td colspan='4' style='color:var(--red); padding: 15px;'>Failed to calculate range.</td></tr>";
     }
 }
-    </script>
-    <script>
         // Register Service Worker for PWA
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js')
                 .then(() => console.log("Service Worker Registered"))
                 .catch(err => console.error("Service Worker Failed", err));
+        }
+        function checkMasterPassword() {
+            const attempt = prompt("🔒 MASTER VAULT LOCKED.\n\nEnter Authorization Code:");
+            
+            if (attempt === "159753") {
+                window.location.href = "superadmin.html";
+            } else if (attempt !== null) { // (null means they clicked 'Cancel')
+                alert("❌ ACCESS DENIED: Incorrect Password.");
+            }
         }
     </script>
 </body>
