@@ -84,10 +84,20 @@
 
             <div id="section-attendance" class="section">
                 <div class="card" style="border: 1px dashed var(--godmode); background: #1a1a1a;">
-                    <h3 style="color: var(--godmode); margin-top: 0;">📅 Master Attendance Log</h3>
-                    <p style="color: #aaa; font-size: 13px;">Edit statuses or completely delete a locked day.</p>
-                    <div id="master-attendance-list">
-                        <p>Fetching all attendance records...</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <div>
+                            <h3 style="color: var(--godmode); margin-top: 0; margin-bottom: 5px;">📅 Master Attendance Log</h3>
+                            <p style="color: #aaa; font-size: 13px; margin: 0;">Edit statuses or completely delete a locked day.</p>
+                        </div>
+                    </div>
+
+                    <div id="master-att-nav" style="display: none; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #222; padding: 10px; border-radius: 8px;">
+                        <button onclick="goBackMasterAttendance()" style="background: #333; color: white; border: 1px solid #555; padding: 6px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">⬅ Back</button>
+                        <span id="master-att-breadcrumb" style="color: var(--godmode); font-weight: bold; font-size: 16px;"></span>
+                    </div>
+                    
+                    <div id="master-attendance-content">
+                        <p>Loading...</p>
                     </div>
                 </div>
             </div>
@@ -125,6 +135,8 @@
 
     <script>
         let currentGroupId = null;
+        let masterGroupCreatedAt = new Date(); // Tracks group creation in God Mode
+        const histMonthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
         // Toggles between the three screens
         function showSection(id) {
@@ -147,9 +159,19 @@
 
             document.getElementById('activeGroupName').innerText = groupName + " 👑";
             
+            // FETCH CREATION DATE FOR GOD MODE
+            try {
+                const groupDoc = await db.collection('groups').doc(currentGroupId).get();
+                if (groupDoc.exists && groupDoc.data().createdAt) {
+                    masterGroupCreatedAt = groupDoc.data().createdAt.toDate();
+                } else {
+                    masterGroupCreatedAt = new Date(); // Fallback for old groups
+                }
+            } catch(e) { console.error("Could not fetch group details"); }
+
             // Boot up all 3 systems
             loadStudents();
-            loadMasterAttendance(); 
+            loadMasterAttendanceYears(); // The new Drill-Down starting point!
             initFeesTab(); 
             loadMasterFees();
         }
@@ -207,16 +229,76 @@
         }
 
         // ==========================================
-        // PHASE 2: ATTENDANCE
+        // PHASE 2: ATTENDANCE (DRILL-DOWN FOLDERS)
         // ==========================================
-        async function loadMasterAttendance() {
-            const attList = document.getElementById('master-attendance-list');
+        let currentMasterAttLevel = 'years';
+        let selectedMasterAttYear = null;
+        let selectedMasterAttMonth = null;
+
+        function loadMasterAttendanceYears() {
+            currentMasterAttLevel = 'years';
+            document.getElementById('master-att-nav').style.display = 'none';
+            const contentDiv = document.getElementById('master-attendance-content');
+            
+            const startYear = masterGroupCreatedAt.getFullYear();
+            const currentYear = new Date().getFullYear();
+            
+            let html = `<h4 style="color: var(--godmode); margin-top: 0; margin-bottom: 15px;">📁 Select a Year</h4><div style="display: flex; flex-direction: column; gap: 10px;">`;
+            for (let y = currentYear; y >= startYear; y--) { 
+                html += `<button onclick="renderMasterAttendanceMonths(${y})" style="background: #1a1a1a; border: 1px solid #333; color: white; padding: 15px; border-radius: 8px; font-size: 18px; cursor: pointer; text-align: left; font-weight: bold;">📅 ${y}</button>`;
+            }
+            html += `</div>`;
+            contentDiv.innerHTML = html;
+        }
+
+        function renderMasterAttendanceMonths(year) {
+            currentMasterAttLevel = 'months';
+            selectedMasterAttYear = year;
+            
+            document.getElementById('master-att-nav').style.display = 'flex';
+            document.getElementById('master-att-breadcrumb').innerText = `${year}`;
+            
+            const contentDiv = document.getElementById('master-attendance-content');
+            const startYear = masterGroupCreatedAt.getFullYear();
+            const startMonth = masterGroupCreatedAt.getMonth();
+            const currentYear = new Date().getFullYear();
+            const currentMonth = new Date().getMonth();
+            
+            let html = `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">`;
+            
+            let loopStart = (year === startYear) ? startMonth : 0;
+            let loopEnd = (year === currentYear) ? currentMonth : 11;
+            
+            for (let m = loopStart; m <= loopEnd; m++) {
+                html += `<button onclick="renderMasterAttendanceDates(${year}, ${m})" style="background: #1a1a1a; border: 1px solid #333; color: white; padding: 15px; border-radius: 8px; font-size: 15px; cursor: pointer; font-weight: bold;">🗓️ ${histMonthNames[m]}</button>`;
+            }
+            html += `</div>`;
+            contentDiv.innerHTML = html;
+        }
+
+        async function renderMasterAttendanceDates(year, month) {
+            currentMasterAttLevel = 'dates';
+            selectedMasterAttMonth = month;
+            
+            document.getElementById('master-att-nav').style.display = 'flex';
+            document.getElementById('master-att-breadcrumb').innerText = `${histMonthNames[month]} ${year}`;
+            
+            const contentDiv = document.getElementById('master-attendance-content');
+            contentDiv.innerHTML = "<p style='color:var(--godmode);'>Fetching records...</p>";
+            
             try {
                 const snapshot = await db.collection('attendance').where('groupId', '==', currentGroupId).get();
                 let attData = [];
-                snapshot.forEach(doc => attData.push({ id: doc.id, ...doc.data() }));
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    // FILTER MAGIC: Only grab dates that match the exact Month and Year clicked!
+                    const parts = data.date.split('-');
+                    if (parseInt(parts[2]) === year && (parseInt(parts[1]) - 1) === month) {
+                        attData.push({ id: doc.id, ...data });
+                    }
+                });
 
-                // The fixed date sorter!
+                // Sort purely by the day number within the month
                 attData.sort((a, b) => {
                     const dateA = a.date.split('-').reverse().join(''); 
                     const dateB = b.date.split('-').reverse().join(''); 
@@ -225,7 +307,7 @@
 
                 let html = "";
                 if(attData.length === 0) {
-                    attList.innerHTML = "<p style='color: #888;'>No attendance records found.</p>";
+                    contentDiv.innerHTML = "<p style='color: #888;'>No attendance records found for this month.</p>";
                     return;
                 }
 
@@ -270,8 +352,16 @@
                     }
                     html += `</div>`;
                 });
-                attList.innerHTML = html;
-            } catch (e) { attList.innerHTML = "<p style='color:red;'>Error fetching attendance.</p>"; }
+                contentDiv.innerHTML = html;
+            } catch (e) { contentDiv.innerHTML = "<p style='color:red;'>Error fetching dates.</p>"; console.error(e); }
+        }
+
+        function goBackMasterAttendance() {
+            if (currentMasterAttLevel === 'months') {
+                loadMasterAttendanceYears();
+            } else if (currentMasterAttLevel === 'dates') {
+                renderMasterAttendanceMonths(selectedMasterAttYear);
+            }
         }
 
         async function masterSaveAttendance(docId) {
@@ -287,7 +377,8 @@
                 });
                 await docRef.update({ records: updatedRecords });
                 alert("Attendance updated!");
-                loadMasterAttendance(); 
+                // Instantly reloads the EXACT month you are looking at!
+                renderMasterAttendanceDates(selectedMasterAttYear, selectedMasterAttMonth); 
             } catch (e) { alert("Failed to update."); }
         }
 
@@ -303,7 +394,7 @@
             if(confirm(`Delete attendance for ${date}?`)) {
                 try {
                     await db.collection('attendance').doc(docId).delete();
-                    loadMasterAttendance(); 
+                    renderMasterAttendanceDates(selectedMasterAttYear, selectedMasterAttMonth); 
                 } catch (e) { alert("Failed to delete."); }
             }
         }
