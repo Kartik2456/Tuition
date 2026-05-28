@@ -11,7 +11,6 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
 
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
@@ -73,7 +72,6 @@
 </head>
 <body>
 
-    <!-- LOGIN GATE -->
     <div id="view-auth" class="hidden" style="display: flex; justify-content: center; align-items: center; height: 100vh;">
         <div class="card" style="text-align: center; width: 320px;">
             <h1 style="color: var(--accent);">Tuition Hub</h1>
@@ -81,7 +79,6 @@
         </div>
     </div>
 
-    <!-- NAME SETUP -->
     <div id="view-name-setup" class="hidden" style="display: flex; justify-content: center; align-items: center; height: 100vh;">
         <div class="card" style="text-align: center; width: 350px;">
             <h2 style="color: var(--accent);">Welcome!</h2>
@@ -91,7 +88,6 @@
         </div>
     </div>
 
-    <!-- GROUP SELECTOR -->
     <div id="view-setup" class="hidden">
         <div class="container">
             <h2 style="color: var(--accent);">Your Batches</h2>
@@ -107,7 +103,6 @@
         </div>
     </div>
 
-    <!-- STUDENT SPECIFIC FEE MODAL -->
     <div id="studentFeeModal" class="modal-overlay hidden">
         <div class="modal-card">
             <span class="close-btn" onclick="document.getElementById('studentFeeModal').classList.add('hidden')">&times;</span>
@@ -117,14 +112,12 @@
         </div>
     </div>
 
-    <!-- MAIN DASHBOARD -->
     <div id="main-ui" class="hidden">
         <div id="view-home">
             <div class="navbar">
                 <div class="nav-item active" id="tab-students" onclick="showSection('students')">Students</div>
                 <div class="nav-item" id="tab-attendance" onclick="showSection('attendance')">Attendance</div>
                 <div class="nav-item" id="tab-fees" onclick="showSection('fees')">Fees Status</div>
-                <!-- Removed Switch Batch from here -->
             </div>
 
             <div class="container">
@@ -183,60 +176,62 @@
                             </div>
                             <button id="submit-att-btn" onclick="submitAttendance()" style="flex: 1; background: var(--green); padding: 30px; font-size: 20px; border-radius: 12px; min-width: 200px;">Submit</button>
                             <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #444; width: 100%;">
-        <button onclick="toggleTuitionOffUI()" id="btn-tuition-off" style="width: 100%; background: transparent; color: var(--red); border: 1px solid var(--red); padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold;">+ Mark Tuition Off</button>
-        
-        <div id="tuition-off-container" class="hidden" style="margin-top: 10px; display: flex; gap: 10px;">
-            <input type="text" id="tuitionOffReason" placeholder="Reason" style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #555; background: #2c2c2c; color: white;">
-            <button onclick="submitTuitionOff()" style="background: var(--red); color: white; padding: 10px 15px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold;">Confirm Off</button>
-        </div>
-    </div>
+                                <button onclick="toggleTuitionOffUI()" id="btn-tuition-off" style="width: 100%; background: transparent; color: var(--red); border: 1px solid var(--red); padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold;">+ Mark Tuition Off</button>
+                                <div id="tuition-off-container" class="hidden" style="margin-top: 10px; display: flex; gap: 10px;">
+                                    <input type="text" id="tuitionOffReason" placeholder="Reason" style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #555; background: #2c2c2c; color: white;">
+                                    <button onclick="submitTuitionOff()" style="background: var(--red); color: white; padding: 10px 15px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold;">Confirm Off</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
+
                     <div id="branch-history" class="att-branch hidden">
-                        <div id="historyLogs">No attendance history yet.</div>
+                        <div id="history-nav" style="display: none; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #222; padding: 10px; border-radius: 8px;">
+                            <button onclick="goBackHistory()" style="background: #333; color: white; border: 1px solid #555; padding: 6px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">⬅ Back</button>
+                            <span id="history-breadcrumb" style="color: var(--accent); font-weight: bold; font-size: 16px;"></span>
+                        </div>
+                        
+                        <div id="history-content">
+                            </div>
                     </div>
             
-                <div id="branch-summary" class="att-branch hidden">
-    <!-- Date Range Selectors -->
-    <div class="card" style="margin-bottom: 15px;">
-        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-            <div style="flex: 1;">
-                <label style="font-size: 12px; color: var(--accent);">From Date</label>
-                <input type="date" id="summaryStartDate" style="width: 100%; box-sizing: border-box; padding: 10px; background: #2c2c2c; color: white; border: 1px solid #444; border-radius: 6px;">
-            </div>
-            <div style="flex: 1;">
-                <label style="font-size: 12px; color: var(--accent);">To Date</label>
-                <input type="date" id="summaryEndDate" style="width: 100%; box-sizing: border-box; padding: 10px; background: #2c2c2c; color: white; border: 1px solid #444; border-radius: 6px;">
-            </div>
-        </div>
-        <button onclick="calculateRangeSummary()" style="width: 100%; padding: 12px; border-radius: 6px; border: none; cursor: pointer; background: var(--accent); color: #000; font-weight: bold;">Get Attendance Count</button>
-    </div>
-
-    <!-- Results Table -->
-    <div class="card">
-        <table style="width: 100%; text-align: left; border-collapse: collapse;">
-            <thead>
-                <tr style="border-bottom: 1px solid #333;">
-                    <th style="color: var(--accent); padding: 10px;">Name</th>
-                    <th style="padding: 10px;">Present</th>
-                    <th style="padding: 10px;">Absent</th>
-                    <th style="padding: 10px;">Total</th>
-                </tr>
-            </thead>
-            <tbody id="summaryList">
-                <tr><td colspan='4' style='text-align:center; padding: 15px; color: #888;'>Select dates and click get count</td></tr>
-            </tbody>
-        </table>
-    </div>
-</div>
-                </div>
-                <div id="section-fees" class="section">
-                    <div class="card fees-layout">
-                        
-                        <div class="months-sidebar" id="feeMonthsContainer">
-                            <!-- Months injected via JS -->
+                    <div id="branch-summary" class="att-branch hidden">
+                        <div class="card" style="margin-bottom: 15px;">
+                            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                                <div style="flex: 1;">
+                                    <label style="font-size: 12px; color: var(--accent);">From Date</label>
+                                    <input type="date" id="summaryStartDate" style="width: 100%; box-sizing: border-box; padding: 10px; background: #2c2c2c; color: white; border: 1px solid #444; border-radius: 6px;">
+                                </div>
+                                <div style="flex: 1;">
+                                    <label style="font-size: 12px; color: var(--accent);">To Date</label>
+                                    <input type="date" id="summaryEndDate" style="width: 100%; box-sizing: border-box; padding: 10px; background: #2c2c2c; color: white; border: 1px solid #444; border-radius: 6px;">
+                                </div>
+                            </div>
+                            <button onclick="calculateRangeSummary()" style="width: 100%; padding: 12px; border-radius: 6px; border: none; cursor: pointer; background: var(--accent); color: #000; font-weight: bold;">Get Attendance Count</button>
                         </div>
 
+                        <div class="card">
+                            <table style="width: 100%; text-align: left; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid #333;">
+                                        <th style="color: var(--accent); padding: 10px;">Name</th>
+                                        <th style="padding: 10px;">Present</th>
+                                        <th style="padding: 10px;">Absent</th>
+                                        <th style="padding: 10px;">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="summaryList">
+                                    <tr><td colspan='4' style='text-align:center; padding: 15px; color: #888;'>Select dates and click get count</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="section-fees" class="section">
+                    <div class="card fees-layout">
+                        <div class="months-sidebar" id="feeMonthsContainer">
+                            </div>
                         <div class="fees-content">
                             <h3 id="currentMonthHeader" style="margin-top: 0; color: var(--accent);">Fees Status</h3>
                             <table>
@@ -244,7 +239,6 @@
                                 <tbody id="feesList"></tbody>
                             </table>
                         </div>
-
                     </div>
                 </div>
             </div>
@@ -257,12 +251,11 @@
                     <h2 id="userNameDisplay"></h2>
                     <p id="userRoleDisplay" style="color: var(--accent); font-weight: bold; margin-top: -10px; margin-bottom: 20px;"></p>
                     
-                    <!-- Moved Switch Batch Button Here -->
                     <button onclick="exitGroup()" style="background: #332940; color: white; border: 1px solid var(--accent); width: 100%; margin-bottom: 15px;">Switch Batch</button>
                     <button onclick="handleLogout()" style="background: var(--red); color: white; width: 100%;">Logout Account</button>
                     <button id="btn-super-admin" onclick="checkMasterPassword()" style="display: none; background: purple; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px;">
-    ⚙️ Master Control
-</button>
+                        ⚙️ Master Control
+                    </button>
                 </div>
 
                 <div class="card" id="adminListCard">
@@ -315,7 +308,9 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
+        // 1. ADDED THE CREATION DATE TRACKER HERE
         let activeGroupID = null;
+        let activeGroupCreatedAt = null; // Memorizes exactly when this group was created!
         let currentUserData = null;
         let isAdmin = false;
         let currentStudentsData = []; 
@@ -328,12 +323,11 @@
 
         auth.onAuthStateChanged(async (user) => {
             if (user) {
-                // WAKE UP THE SECRET DOOR ONLY FOR MASTER ADMIN
-        const masterEmail = "ganeshthapa1420@gmail.com"; 
-        if (user.email === masterEmail) {
-            const superAdminBtn = document.getElementById('btn-super-admin');
-            if (superAdminBtn) superAdminBtn.style.display = 'block'; 
-        }
+                const masterEmail = "ganeshthapa1420@gmail.com"; 
+                if (user.email === masterEmail) {
+                    const superAdminBtn = document.getElementById('btn-super-admin');
+                    if (superAdminBtn) superAdminBtn.style.display = 'block'; 
+                }
                 document.getElementById('view-auth').classList.add('hidden');
                 
                 const userDoc = await db.collection('users').doc(user.uid).get();
@@ -398,36 +392,38 @@
             if (!activeGroupID) document.getElementById('view-setup').classList.remove('hidden');
         }
 
-       async function createGroup() {
-    const name = document.getElementById('newGroupName').value;
-    if(!name) return alert("Batch name required!");
-    
-    // 1. Find the "Create" button and instantly freeze it
-    const btn = document.querySelector('button[onclick="createGroup()"]');
-    if (btn) {
-        btn.disabled = true;
-        btn.innerText = "Creating...";
-        btn.style.opacity = "0.7"; // Make it look disabled
-    }
+        async function createGroup() {
+            const name = document.getElementById('newGroupName').value;
+            if(!name) return alert("Batch name required!");
+            
+            const btn = document.querySelector('button[onclick="createGroup()"]');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = "Creating...";
+                btn.style.opacity = "0.7"; 
+            }
 
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+            const code = Math.random().toString(36).substring(2, 8).toUpperCase();
 
-    try {
-        const groupRef = await db.collection('groups').add({ name, code, admins: [auth.currentUser.email.toLowerCase()] });
-        await db.collection('members').add({ uid: auth.currentUser.uid, groupId: groupRef.id });
-        
-        // Reload the page to show the new batch
-        location.reload(); 
-    } catch (error) {
-        // If the database fails, unfreeze the button so they can try again
-        if (btn) {
-            btn.disabled = false;
-            btn.innerText = "Create";
-            btn.style.opacity = "1";
+            try {
+                // 2. STAMPING THE CREATION DATE IN FIREBASE HERE
+                const groupRef = await db.collection('groups').add({ 
+                    name, 
+                    code, 
+                    admins: [auth.currentUser.email.toLowerCase()], 
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp() 
+                });
+                await db.collection('members').add({ uid: auth.currentUser.uid, groupId: groupRef.id });
+                location.reload(); 
+            } catch (error) {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = "Create";
+                    btn.style.opacity = "1";
+                }
+                alert("Failed to create batch.");
+            }
         }
-        alert("Failed to create batch.");
-    }
-}
 
         async function joinGroup() {
             const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
@@ -458,7 +454,13 @@
             document.getElementById('activeGroupName').innerText = name;
             
             const groupDoc = await db.collection('groups').doc(id).get();
-            const adminArray = groupDoc.data().admins || [];
+            const groupData = groupDoc.data();
+            
+            // 3. FETCHING THE CREATION DATE HERE
+            // If it's an old group without a timestamp, fallback to May 1st to protect the app.
+            activeGroupCreatedAt = groupData.createdAt ? groupData.createdAt.toDate() : new Date('2026-05-01');
+
+            const adminArray = groupData.admins || [];
             
             const currentEmail = auth.currentUser.email.toLowerCase();
             isAdmin = adminArray.includes(currentEmail);
@@ -517,7 +519,6 @@
             loadData();
         }
 
-        // Updated to force the view back to "Home" when exiting a batch
         function exitGroup() { 
             activeGroupID = null; 
             loadUserGroups(); 
@@ -526,30 +527,27 @@
         }
 
         async function checkTodayAttendance() {
-    const today = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
-    const btn = document.getElementById('submit-att-btn');
-    
-    // Grab the Tuition Off buttons so we can control them
-    const tuitionOffBtn = document.getElementById('btn-tuition-off');
-    const tuitionOffContainer = document.getElementById('tuition-off-container');
-    
-    const snapshot = await db.collection('attendance').where('groupId', '==', activeGroupID).where('date', '==', today).get();
+            const today = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
+            const btn = document.getElementById('submit-att-btn');
+            
+            const tuitionOffBtn = document.getElementById('btn-tuition-off');
+            const tuitionOffContainer = document.getElementById('tuition-off-container');
+            
+            const snapshot = await db.collection('attendance').where('groupId', '==', activeGroupID).where('date', '==', today).get();
 
-    if (!snapshot.empty && isAdmin) {
-        // Attendance IS done: Lock Submit AND Hide Tuition Off
-        btn.innerText = "Submitted"; 
-        btn.style.background = "#333"; 
-        btn.disabled = true;
-        if (tuitionOffBtn) tuitionOffBtn.style.display = 'none';
-        if (tuitionOffContainer) tuitionOffContainer.style.display = 'none';
-    } else if (isAdmin) {
-        // Attendance IS NOT done: Unlock Submit AND Show Tuition Off
-        btn.innerText = "Submit"; 
-        btn.style.background = "var(--green)"; 
-        btn.disabled = false;
-        if (tuitionOffBtn) tuitionOffBtn.style.display = 'block';
-    }
-}
+            if (!snapshot.empty && isAdmin) {
+                btn.innerText = "Submitted"; 
+                btn.style.background = "#333"; 
+                btn.disabled = true;
+                if (tuitionOffBtn) tuitionOffBtn.style.display = 'none';
+                if (tuitionOffContainer) tuitionOffContainer.style.display = 'none';
+            } else if (isAdmin) {
+                btn.innerText = "Submit"; 
+                btn.style.background = "var(--green)"; 
+                btn.disabled = false;
+                if (tuitionOffBtn) tuitionOffBtn.style.display = 'block';
+            }
+        }
 
         async function loadData() {
             const today = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
@@ -693,134 +691,116 @@
                 <button class="btn-cancel" onclick="cancelFeeInput('${id}')">Cancel</button>
             `;
         }
-// Variable to remember if we are filling a past date
-let targetAttendanceDate = null; 
 
-// When you click a missing date in History, this runs:
-function openMissingAttendance(missingDateStr) {
-    targetAttendanceDate = missingDateStr; 
-    switchAttBranch('today'); 
-    
-    // Change the tab header so you know you're filling a past date
-    const todayTab = document.getElementById('sub-today');
-    if(todayTab) todayTab.innerHTML = `Filling: ${missingDateStr}`;
-    
-    // 1. WAKE UP THE RADIO BUTTONS (Uncheck them and Unlock them)
-    document.querySelectorAll('input[type="radio"]').forEach(r => {
-        r.checked = false;
-        r.disabled = false; // This brings your clickable circles back!
-    });
+        let targetAttendanceDate = null; 
 
-    // 2. WAKE UP THE SUBMIT BUTTON (Unlock it and restore your bright color)
-    const btn = document.getElementById('submit-att-btn');
-    if(btn) {
-        btn.disabled = false;
-        btn.innerText = "Submit";
-        btn.style.background = "var(--accent)"; // Restores your original cyan color
-    }
+        function openMissingAttendance(missingDateStr) {
+            targetAttendanceDate = missingDateStr; 
+            switchAttBranch('today'); 
+            
+            const todayTab = document.getElementById('sub-today');
+            if(todayTab) todayTab.innerHTML = `Filling: ${missingDateStr}`;
+            
+            document.querySelectorAll('input[type="radio"]').forEach(r => {
+                r.checked = false;
+                r.disabled = false; 
+            });
 
-    // 3. WAKE UP THE TUITION OFF BUTTON (Just in case it was hidden)
-    const tuitionOffBtn = document.getElementById('btn-tuition-off');
-    if (tuitionOffBtn) tuitionOffBtn.style.display = 'block';
-    
-    const tuitionOffContainer = document.getElementById('tuition-off-container');
-    if (tuitionOffContainer) tuitionOffContainer.classList.add('hidden');
-}
-// Helper to get today's date in DD-MM-YYYY format
-function getTodayDDMMYYYY() {
-    const d = new Date();
-    const dd = String(d.getDate()).padStart(2, '0');
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    return `${dd}-${mm}-${d.getFullYear()}`;
-}
+            const btn = document.getElementById('submit-att-btn');
+            if(btn) {
+                btn.disabled = false;
+                btn.innerText = "Submit";
+                btn.style.background = "var(--accent)"; 
+            }
 
-// Helper to get the Day Name (Monday, Tuesday) from DD-MM-YYYY
-function getDayNameFromDDMMYYYY(dateStr) {
-    const [dd, mm, yyyy] = dateStr.split('-');
-    const d = new Date(`${yyyy}-${mm}-${dd}`);
-    return d.toLocaleDateString('en-US', { weekday: 'long' });
-}
+            const tuitionOffBtn = document.getElementById('btn-tuition-off');
+            if (tuitionOffBtn) tuitionOffBtn.style.display = 'block';
+            
+            const tuitionOffContainer = document.getElementById('tuition-off-container');
+            if (tuitionOffContainer) tuitionOffContainer.classList.add('hidden');
+        }
 
+        function getTodayDDMMYYYY() {
+            const d = new Date();
+            const dd = String(d.getDate()).padStart(2, '0');
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            return `${dd}-${mm}-${d.getFullYear()}`;
+        }
 
+        function getDayNameFromDDMMYYYY(dateStr) {
+            const [dd, mm, yyyy] = dateStr.split('-');
+            const d = new Date(`${yyyy}-${mm}-${dd}`);
+            return d.toLocaleDateString('en-US', { weekday: 'long' });
+        }
 
+        function toggleTuitionOffUI() {
+            const container = document.getElementById('tuition-off-container');
+            const btn = document.getElementById('btn-tuition-off');
+            container.classList.toggle('hidden');
+            if(!container.classList.contains('hidden')) {
+                btn.style.display = 'none'; 
+            }
+        }
 
-// Function to show/hide the "Reason" input box
-function toggleTuitionOffUI() {
-    const container = document.getElementById('tuition-off-container');
-    const btn = document.getElementById('btn-tuition-off');
-    container.classList.toggle('hidden');
-    if(!container.classList.contains('hidden')) {
-        btn.style.display = 'none'; // Hide the original button when typing reason
-    }
-}
+        function getFormattedDateAndDay(dateVal) {
+            if (!dateVal) return { dateStr: "", dayName: "" };
+            const dateObj = new Date(dateVal);
+            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' }); 
+            const [yyyy, mm, dd] = dateVal.split('-');
+            return { dateStr: `${dd}-${mm}-${yyyy}`, dayName };
+        }
 
-// Function to convert YYYY-MM-DD to DD-MM-YYYY and get the Day Name
-function getFormattedDateAndDay(dateVal) {
-    if (!dateVal) return { dateStr: "", dayName: "" };
-    const dateObj = new Date(dateVal);
-    const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' }); 
-    const [yyyy, mm, dd] = dateVal.split('-');
-    return { dateStr: `${dd}-${mm}-${yyyy}`, dayName };
-}
-// This makes the history dropdowns actually open and close when you click the date!
-function toggleHistory(headerElement) {
-    const detailsDiv = headerElement.nextElementSibling;
-    const arrowSpan = headerElement.querySelector('.arrow');
-    
-    // Toggle the hidden class to show/hide the students
-    detailsDiv.classList.toggle('hidden');
-    
-    // Flip the arrow icon up or down
-    if (detailsDiv.classList.contains('hidden')) {
-        if (arrowSpan) arrowSpan.innerText = "▼";
-    } else {
-        if (arrowSpan) arrowSpan.innerText = "▲";
-    }
-}
-// Function to submit "Tuition Off" to the database
-// Function to submit "Tuition Off" to the database
-async function submitTuitionOff() {
-    // 1. Use the smart date tracker (handles both Today and Missing dates)
-    const dateToSave = targetAttendanceDate ? targetAttendanceDate : getTodayDDMMYYYY();
-    const reason = document.getElementById('tuitionOffReason').value.trim();
-    
-    if (!reason) return alert("Please type a reason!");
+        function toggleHistory(headerElement) {
+            const detailsDiv = headerElement.nextElementSibling;
+            const arrowSpan = headerElement.querySelector('.arrow');
+            
+            detailsDiv.classList.toggle('hidden');
+            
+            if (detailsDiv.classList.contains('hidden')) {
+                if (arrowSpan) arrowSpan.innerText = "▼";
+            } else {
+                if (arrowSpan) arrowSpan.innerText = "▲";
+            }
+        }
 
-    const dayName = getDayNameFromDDMMYYYY(dateToSave);
-    const attendanceDocId = `${activeGroupID}_${dateToSave}`; 
+        async function submitTuitionOff() {
+            const dateToSave = targetAttendanceDate ? targetAttendanceDate : getTodayDDMMYYYY();
+            const reason = document.getElementById('tuitionOffReason').value.trim();
+            
+            if (!reason) return alert("Please type a reason!");
 
-    // 2. Smart check to prevent duplicate entries
-    const existingDoc = await db.collection('attendance').doc(attendanceDocId).get();
-    if (existingDoc.exists) {
-        alert(`Attendance or Tuition Off for ${dateToSave} is already registered!`);
-        return location.reload();
-    }
+            const dayName = getDayNameFromDDMMYYYY(dateToSave);
+            const attendanceDocId = `${activeGroupID}_${dateToSave}`; 
 
-    // 3. MUTUAL LOCK: Disable BOTH buttons instantly so you can't click the other!
-    const confirmOffBtn = document.querySelector('button[onclick="submitTuitionOff()"]');
-    const submitAttBtn = document.getElementById('submit-att-btn');
-    if (confirmOffBtn) confirmOffBtn.disabled = true;
-    if (submitAttBtn) submitAttBtn.disabled = true; // Locks the main attendance button!
+            const existingDoc = await db.collection('attendance').doc(attendanceDocId).get();
+            if (existingDoc.exists) {
+                alert(`Attendance or Tuition Off for ${dateToSave} is already registered!`);
+                return location.reload();
+            }
 
-    try {
-        await db.collection('attendance').doc(attendanceDocId).set({
-            date: dateToSave,
-            day: dayName, 
-            groupId: activeGroupID,
-            isOff: true,      
-            reason: reason,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        alert("Tuition marked OFF successfully!");
-        location.reload(); // Refresh to completely clear the screen and reset the buttons
-    } catch (e) {
-        console.error(e);
-        if(confirmOffBtn) confirmOffBtn.disabled = false;
-        if(submitAttBtn) submitAttBtn.disabled = false;
-        alert("Failed to mark tuition off.");
-    }
-}
+            const confirmOffBtn = document.querySelector('button[onclick="submitTuitionOff()"]');
+            const submitAttBtn = document.getElementById('submit-att-btn');
+            if (confirmOffBtn) confirmOffBtn.disabled = true;
+            if (submitAttBtn) submitAttBtn.disabled = true; 
 
+            try {
+                await db.collection('attendance').doc(attendanceDocId).set({
+                    date: dateToSave,
+                    day: dayName, 
+                    groupId: activeGroupID,
+                    isOff: true,      
+                    reason: reason,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                alert("Tuition marked OFF successfully!");
+                location.reload(); 
+            } catch (e) {
+                console.error(e);
+                if(confirmOffBtn) confirmOffBtn.disabled = false;
+                if(submitAttBtn) submitAttBtn.disabled = false;
+                alert("Failed to mark tuition off.");
+            }
+        }
 
         function cancelFeeInput(id) {
             document.getElementById('f-cont-' + id).innerHTML = `
@@ -901,140 +881,202 @@ async function submitTuitionOff() {
             }
         }
 
-     async function submitAttendance() {
-    const dateToSave = targetAttendanceDate ? targetAttendanceDate : getTodayDDMMYYYY();
-    const dayName = getDayNameFromDDMMYYYY(dateToSave);
+        async function submitAttendance() {
+            const dateToSave = targetAttendanceDate ? targetAttendanceDate : getTodayDDMMYYYY();
+            const dayName = getDayNameFromDDMMYYYY(dateToSave);
 
-    let records = [];
-    const snapshot = await db.collection('students').where('groupId', '==', activeGroupID).get();
-    
-    snapshot.forEach(doc => {
-        const id = doc.id;
-        const pRadio = document.getElementById(`p-${id}`);
-        const aRadio = document.getElementById(`a-${id}`);
-        
-        let status = "Not Marked"; 
-        if (pRadio && pRadio.checked) status = "Present";
-        if (aRadio && aRadio.checked) status = "Absent";
-        
-        records.push({ name: doc.data().name, status: status });
-    });
-
-    if(records.length === 0) return alert("No students in this batch!");
-
-    const attendanceDocId = `${activeGroupID}_${dateToSave}`;
-    const existingDoc = await db.collection('attendance').doc(attendanceDocId).get();
-    
-    if (existingDoc.exists) {
-        alert(`Attendance for ${dateToSave} is already registered!`);
-        location.reload(); 
-        return; 
-    }
-
-    // MUTUAL LOCK: Disable Submit, and completely HIDE the Tuition Off button!
-    const btn = document.getElementById('submit-att-btn');
-    const tuitionOffBtn = document.getElementById('btn-tuition-off');
-    const tuitionOffContainer = document.getElementById('tuition-off-container');
-    
-    if (btn) btn.disabled = true;
-    if (tuitionOffBtn) tuitionOffBtn.style.display = 'none'; // Poof, it's gone!
-    if (tuitionOffContainer) tuitionOffContainer.style.display = 'none';
-
-    await db.collection('attendance').doc(attendanceDocId).set({ 
-        date: dateToSave, 
-        day: dayName, 
-        groupId: activeGroupID, 
-        records, 
-        timestamp: firebase.firestore.FieldValue.serverTimestamp() 
-    });
-
-    alert("Attendance recorded successfully!");
-    location.reload(); // Refresh the page to completely reset the UI back to normal!
-}
-    async function loadAttendanceHistory() {
-    const logDiv = document.getElementById('historyLogs');
-    logDiv.innerHTML = "<p style='text-align:center;'>Loading...</p>";
-    try {
-        const snapshot = await db.collection('attendance').where('groupId', '==', activeGroupID).get();
-        let historyData = [];
-        snapshot.forEach(doc => historyData.push(doc.data()));
-
-        let html = "";
-        
-        // Loop through the last 15 days automatically
-        for(let i = 0; i < 15; i++) {
-            let d = new Date();
-            d.setDate(d.getDate() - i);
-            let dd = String(d.getDate()).padStart(2, '0');
-            let mm = String(d.getMonth() + 1).padStart(2, '0');
-            let yyyy = d.getFullYear();
-            let dateStr = `${dd}-${mm}-${yyyy}`;
+            let records = [];
+            const snapshot = await db.collection('students').where('groupId', '==', activeGroupID).get();
             
-            let data = historyData.find(record => record.date === dateStr);
+            snapshot.forEach(doc => {
+                const id = doc.id;
+                const pRadio = document.getElementById(`p-${id}`);
+                const aRadio = document.getElementById(`a-${id}`);
+                
+                let status = "Not Marked"; 
+                if (pRadio && pRadio.checked) status = "Present";
+                if (aRadio && aRadio.checked) status = "Absent";
+                
+                records.push({ name: doc.data().name, status: status });
+            });
+
+            if(records.length === 0) return alert("No students in this batch!");
+
+            const attendanceDocId = `${activeGroupID}_${dateToSave}`;
+            const existingDoc = await db.collection('attendance').doc(attendanceDocId).get();
             
-            if (data) {
-                const dayText = data.day ? ` - ${data.day}` : '';
-                if (data.isOff) {
-                    html += `
-                    <div class="card" style="border-left: 5px solid var(--red); margin-bottom: 10px;">
-                        <div style="font-size: 14px; font-weight: bold; color: var(--red);">
-                            ${data.date}${dayText} <span style="background: var(--red); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 10px;">TUITION OFF</span>
-                        </div>
-                        <div style="margin-top: 8px; color: #aaa; font-style: italic;">Reason: <span style="color: white;">${data.reason}</span></div>
-                    </div>`;
-                } else {
-                    // BRUTE FORCE TOGGLE: The JavaScript is baked right into the onclick tag!
-                    html += `
-                    <div class="history-item" style="background: #1e1e1e; padding: 10px; border-radius: 6px; margin-bottom: 10px;">
-                        <div class="history-header" style="cursor: pointer; display: flex; justify-content: space-between;" onclick="const details = this.nextElementSibling; const arrow = this.querySelector('.arrow'); if(details.style.display === 'none') { details.style.display = 'block'; arrow.innerText = '▲'; } else { details.style.display = 'none'; arrow.innerText = '▼'; }">
-                            <strong style="color: var(--accent);">${data.date}${dayText}</strong>
-                            <span class="arrow" style="font-size: 14px; color: #888;">▼</span>
-                        </div>
-                        
-                        <div class="history-details" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #333;">`;
-                    
-                    if (data.records && data.records.length > 0) {
-                        data.records.forEach(r => {
-                            let color = r.status === 'Present' ? 'var(--green)' : 'var(--red)';
-                            html += `
-                            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #222;">
-                                <span>${r.name}</span>
-                                <span style="color: ${color}; font-weight: bold;">${r.status}</span>
-                            </div>`;
-                        });
-                    } else {
-                        html += `<div style="padding: 10px; color: #888;">No attendance data saved for these students.</div>`;
-                    }
-                    
-                    html += `</div></div>`;
+            if (existingDoc.exists) {
+                alert(`Attendance for ${dateToSave} is already registered!`);
+                location.reload(); 
+                return; 
+            }
+
+            const btn = document.getElementById('submit-att-btn');
+            const tuitionOffBtn = document.getElementById('btn-tuition-off');
+            const tuitionOffContainer = document.getElementById('tuition-off-container');
+            
+            if (btn) btn.disabled = true;
+            if (tuitionOffBtn) tuitionOffBtn.style.display = 'none'; 
+            if (tuitionOffContainer) tuitionOffContainer.style.display = 'none';
+
+            await db.collection('attendance').doc(attendanceDocId).set({ 
+                date: dateToSave, 
+                day: dayName, 
+                groupId: activeGroupID, 
+                records, 
+                timestamp: firebase.firestore.FieldValue.serverTimestamp() 
+            });
+
+            alert("Attendance recorded successfully!");
+            location.reload(); 
+        }
+
+        // ==========================================
+        // 4. SMART DRILL-DOWN HISTORY SYSTEM (REPLACES OLD HISTORY LOGIC)
+        // ==========================================
+        let currentHistoryLevel = 'years'; 
+        let selectedHistYear = null;
+        let selectedHistMonth = null;
+
+        function loadAttendanceHistory() {
+            currentHistoryLevel = 'years';
+            document.getElementById('history-nav').style.display = 'none';
+            const contentDiv = document.getElementById('history-content');
+            
+            const startYear = activeGroupCreatedAt.getFullYear();
+            const currentYear = new Date().getFullYear();
+            
+            let html = `<h4 style="color: var(--accent); margin-top: 0; margin-bottom: 15px;">📁 Select a Year</h4><div style="display: flex; flex-direction: column; gap: 10px;">`;
+            
+            for (let y = currentYear; y >= startYear; y--) { 
+                html += `<button onclick="renderHistoryMonths(${y})" style="background: #1a1a1a; border: 1px solid #333; color: white; padding: 15px; border-radius: 8px; font-size: 18px; cursor: pointer; text-align: left; font-weight: bold;">📅 ${y}</button>`;
+            }
+            html += `</div>`;
+            contentDiv.innerHTML = html;
+        }
+
+        function renderHistoryMonths(year) {
+            currentHistoryLevel = 'months';
+            selectedHistYear = year;
+            
+            document.getElementById('history-nav').style.display = 'flex';
+            document.getElementById('history-breadcrumb').innerText = `${year}`;
+            
+            const contentDiv = document.getElementById('history-content');
+            const startYear = activeGroupCreatedAt.getFullYear();
+            const startMonth = activeGroupCreatedAt.getMonth();
+            const currentYear = new Date().getFullYear();
+            const currentMonth = new Date().getMonth();
+            
+            let html = `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">`;
+            
+            let loopStart = (year === startYear) ? startMonth : 0;
+            let loopEnd = (year === currentYear) ? currentMonth : 11;
+            
+            for (let m = loopStart; m <= loopEnd; m++) {
+                html += `<button onclick="renderHistoryDates(${year}, ${m})" style="background: #1a1a1a; border: 1px solid #333; color: white; padding: 15px; border-radius: 8px; font-size: 15px; cursor: pointer; font-weight: bold;">🗓️ ${monthNames[m]}</button>`;
+            }
+            html += `</div>`;
+            contentDiv.innerHTML = html;
+        }
+
+        async function renderHistoryDates(year, month) {
+            currentHistoryLevel = 'dates';
+            selectedHistMonth = month;
+            
+            document.getElementById('history-nav').style.display = 'flex';
+            document.getElementById('history-breadcrumb').innerText = `${monthNames[month]} ${year}`;
+            
+            const contentDiv = document.getElementById('history-content');
+            contentDiv.innerHTML = "<p style='text-align:center; color: var(--accent);'>Fetching records...</p>";
+            
+            try {
+                const snapshot = await db.collection('attendance').where('groupId', '==', activeGroupID).get();
+                let historyData = [];
+                snapshot.forEach(doc => historyData.push(doc.data()));
+
+                let startYear = activeGroupCreatedAt.getFullYear();
+                let startMonth = activeGroupCreatedAt.getMonth();
+                let startDate = activeGroupCreatedAt.getDate();
+                let today = new Date();
+                
+                let loopStartDay = (year === startYear && month === startMonth) ? startDate : 1;
+                let loopEndDay = new Date(year, month + 1, 0).getDate(); 
+                if (year === today.getFullYear() && month === today.getMonth()) {
+                    loopEndDay = today.getDate(); 
                 }
-            } else {
-                html += `
-                <div class="card" style="border-left: 5px solid orange; margin-bottom: 10px; cursor: pointer; background: #2a2015;" onclick="openMissingAttendance('${dateStr}')">
-                    <div style="font-size: 14px; font-weight: bold; color: orange; display: flex; justify-content: space-between; align-items: center;">
-                        ${dateStr} <span style="background: orange; color: black; padding: 4px 8px; border-radius: 4px; font-size: 11px;">TAP TO FILL MISSING</span>
-                    </div>
-                </div>`;
+
+                let html = "";
+                for (let d = loopEndDay; d >= loopStartDay; d--) {
+                    let dd = String(d).padStart(2, '0');
+                    let mm = String(month + 1).padStart(2, '0');
+                    let dateStr = `${dd}-${mm}-${year}`;
+                    
+                    let data = historyData.find(record => record.date === dateStr);
+                    
+                    if (data) {
+                        const dayText = data.day ? ` - ${data.day}` : '';
+                        if (data.isOff) {
+                            html += `
+                            <div class="card" style="border-left: 5px solid var(--red); margin-bottom: 10px;">
+                                <div style="font-size: 14px; font-weight: bold; color: var(--red);">
+                                    ${data.date}${dayText} <span style="background: var(--red); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 10px;">TUITION OFF</span>
+                                </div>
+                                <div style="margin-top: 8px; color: #aaa; font-style: italic;">Reason: <span style="color: white;">${data.reason}</span></div>
+                            </div>`;
+                        } else {
+                            html += `
+                            <div class="history-item" style="background: #1e1e1e; padding: 10px; border-radius: 6px; margin-bottom: 10px;">
+                                <div class="history-header" style="cursor: pointer; display: flex; justify-content: space-between;" onclick="toggleHistory(this)">
+                                    <strong style="color: var(--accent);">${data.date}${dayText}</strong>
+                                    <span class="arrow" style="font-size: 14px; color: #888;">▼</span>
+                                </div>
+                                <div class="history-details hidden" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #333;">`;
+                            
+                            if (data.records && data.records.length > 0) {
+                                data.records.forEach(r => {
+                                    let color = r.status === 'Present' ? 'var(--green)' : 'var(--red)';
+                                    html += `
+                                    <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #222;">
+                                        <span>${r.name}</span><span style="color: ${color}; font-weight: bold;">${r.status}</span>
+                                    </div>`;
+                                });
+                            }
+                            html += `</div></div>`;
+                        }
+                    } else {
+                        html += `
+                        <div class="card" style="border-left: 5px solid orange; margin-bottom: 10px; cursor: pointer; background: #2a2015;" onclick="openMissingAttendance('${dateStr}')">
+                            <div style="font-size: 14px; font-weight: bold; color: orange; display: flex; justify-content: space-between; align-items: center;">
+                                ${dateStr} <span style="background: orange; color: black; padding: 4px 8px; border-radius: 4px; font-size: 11px;">TAP TO FILL MISSING</span>
+                            </div>
+                        </div>`;
+                    }
+                }
+                contentDiv.innerHTML = html || "<p style='text-align:center; color:#888;'>No records for this timeframe.</p>";
+            } catch (error) { contentDiv.innerHTML = "<p style='color:red; text-align:center;'>Failed to load history.</p>"; }
+        }
+
+        function goBackHistory() {
+            if (currentHistoryLevel === 'months') {
+                loadAttendanceHistory(); 
+            } else if (currentHistoryLevel === 'dates') {
+                renderHistoryMonths(selectedHistYear); 
             }
         }
-        logDiv.innerHTML = html;
-    } catch (error) {
-        console.error(error);
-        logDiv.innerHTML = "<p style='color:var(--red); text-align:center;'>Failed to load history.</p>";
-    }
-}
+        // ==========================================
 
         function switchAttBranch(b) {
-    document.getElementById('branch-today').classList.toggle('hidden', b !== 'today');
-    document.getElementById('branch-history').classList.toggle('hidden', b !== 'history');
-    document.getElementById('branch-summary').classList.toggle('hidden', b !== 'summary');
-    
-    document.getElementById('sub-today').classList.toggle('active', b === 'today');
-    document.getElementById('sub-history').classList.toggle('active', b === 'history');
-    document.getElementById('sub-summary').classList.toggle('active', b === 'summary');
+            document.getElementById('branch-today').classList.toggle('hidden', b !== 'today');
+            document.getElementById('branch-history').classList.toggle('hidden', b !== 'history');
+            document.getElementById('branch-summary').classList.toggle('hidden', b !== 'summary');
+            
+            document.getElementById('sub-today').classList.toggle('active', b === 'today');
+            document.getElementById('sub-history').classList.toggle('active', b === 'history');
+            document.getElementById('sub-summary').classList.toggle('active', b === 'summary');
 
-    if (b === 'history') loadAttendanceHistory();
-}
+            if (b === 'history') loadAttendanceHistory();
+        }
 
         async function addStudent() {
             const nameInput = document.getElementById('s-name');
@@ -1078,81 +1120,80 @@ async function submitTuitionOff() {
             document.getElementById('bot-profile').classList.toggle('active', v === 'profile');
             if(v === 'profile') loadData(); 
         }
-        // Helper to convert your DD-MM-YYYY dates into real Dates for the calculator
-function parseCustomDate(dateStr) {
-    const parts = dateStr.split('-');
-    if (parts.length !== 3) return new Date(0); // fallback
-    return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-}
 
-// The main counting function
-async function calculateRangeSummary() {
-    const startVal = document.getElementById('summaryStartDate').value;
-    const endVal = document.getElementById('summaryEndDate').value;
-    const summaryList = document.getElementById('summaryList');
-
-    if (!startVal || !endVal) return alert("Please select both From and To dates.");
-
-    const startDate = new Date(startVal);
-    startDate.setHours(0,0,0,0);
-    const endDate = new Date(endVal);
-    endDate.setHours(23,59,59,999);
-
-    summaryList.innerHTML = "<tr><td colspan='4' style='text-align:center;'>Counting...</td></tr>";
-
-    try {
-        const snapshot = await db.collection('attendance').where('groupId', '==', activeGroupID).get();
-        let stats = {}; 
-
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            const recordDate = parseCustomDate(data.date);
-            
-            // Check if this attendance record falls inside your chosen dates
-            if (recordDate >= startDate && recordDate <= endDate) {
-                if (data.records && data.records.length > 0) {
-                    data.records.forEach(r => {
-                        if (!stats[r.name]) stats[r.name] = { present: 0, absent: 0, total: 0 };
-                        
-                        stats[r.name].total += 1;
-                        if (r.status === "Present") stats[r.name].present += 1;
-                        if (r.status === "Absent") stats[r.name].absent += 1;
-                    });
-                }
-            }
-        });
-
-        let html = "";
-        for (const [name, data] of Object.entries(stats)) {
-            html += `
-                <tr style="border-bottom: 1px solid #333;">
-                    <td style="font-weight:bold; padding: 10px;">${name}</td>
-                    <td style="color: var(--green); font-weight:bold; padding: 10px;">${data.present}</td>
-                    <td style="color: var(--red); padding: 10px;">${data.absent}</td>
-                    <td style="padding: 10px;">${data.total}</td>
-                </tr>
-            `;
+        function parseCustomDate(dateStr) {
+            const parts = dateStr.split('-');
+            if (parts.length !== 3) return new Date(0); 
+            return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
         }
 
-        summaryList.innerHTML = html || "<tr><td colspan='4' style='text-align:center; padding: 15px; color:#888;'>No attendance recorded between these dates.</td></tr>";
+        async function calculateRangeSummary() {
+            const startVal = document.getElementById('summaryStartDate').value;
+            const endVal = document.getElementById('summaryEndDate').value;
+            const summaryList = document.getElementById('summaryList');
 
-    } catch (e) {
-        console.error(e);
-        summaryList.innerHTML = "<tr><td colspan='4' style='color:var(--red); padding: 15px;'>Failed to calculate range.</td></tr>";
-    }
-}
-        // Register Service Worker for PWA
+            if (!startVal || !endVal) return alert("Please select both From and To dates.");
+
+            const startDate = new Date(startVal);
+            startDate.setHours(0,0,0,0);
+            const endDate = new Date(endVal);
+            endDate.setHours(23,59,59,999);
+
+            summaryList.innerHTML = "<tr><td colspan='4' style='text-align:center;'>Counting...</td></tr>";
+
+            try {
+                const snapshot = await db.collection('attendance').where('groupId', '==', activeGroupID).get();
+                let stats = {}; 
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const recordDate = parseCustomDate(data.date);
+                    
+                    if (recordDate >= startDate && recordDate <= endDate) {
+                        if (data.records && data.records.length > 0) {
+                            data.records.forEach(r => {
+                                if (!stats[r.name]) stats[r.name] = { present: 0, absent: 0, total: 0 };
+                                
+                                stats[r.name].total += 1;
+                                if (r.status === "Present") stats[r.name].present += 1;
+                                if (r.status === "Absent") stats[r.name].absent += 1;
+                            });
+                        }
+                    }
+                });
+
+                let html = "";
+                for (const [name, data] of Object.entries(stats)) {
+                    html += `
+                        <tr style="border-bottom: 1px solid #333;">
+                            <td style="font-weight:bold; padding: 10px;">${name}</td>
+                            <td style="color: var(--green); font-weight:bold; padding: 10px;">${data.present}</td>
+                            <td style="color: var(--red); padding: 10px;">${data.absent}</td>
+                            <td style="padding: 10px;">${data.total}</td>
+                        </tr>
+                    `;
+                }
+
+                summaryList.innerHTML = html || "<tr><td colspan='4' style='text-align:center; padding: 15px; color:#888;'>No attendance recorded between these dates.</td></tr>";
+
+            } catch (e) {
+                console.error(e);
+                summaryList.innerHTML = "<tr><td colspan='4' style='color:var(--red); padding: 15px;'>Failed to calculate range.</td></tr>";
+            }
+        }
+
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js')
                 .then(() => console.log("Service Worker Registered"))
                 .catch(err => console.error("Service Worker Failed", err));
         }
+
         function checkMasterPassword() {
             const attempt = prompt("🔒 MASTER VAULT LOCKED.\n\nEnter Authorization Code:");
             
             if (attempt === "159753") {
                 window.location.href = "superadmin.html";
-            } else if (attempt !== null) { // (null means they clicked 'Cancel')
+            } else if (attempt !== null) { 
                 alert("❌ ACCESS DENIED: Incorrect Password.");
             }
         }
