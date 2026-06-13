@@ -308,9 +308,8 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // 1. ADDED THE CREATION DATE TRACKER HERE
         let activeGroupID = null;
-        let activeGroupCreatedAt = null; // Memorizes exactly when this group was created!
+        let activeGroupCreatedAt = null; 
         let currentUserData = null;
         let isAdmin = false;
         let currentStudentsData = []; 
@@ -319,7 +318,9 @@
         let currentFeeMonth = new Date().getMonth(); 
         const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-        document.getElementById('currentDateDisplay').innerText = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
+        if(document.getElementById('currentDateDisplay')) {
+            document.getElementById('currentDateDisplay').innerText = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
+        }
 
         auth.onAuthStateChanged(async (user) => {
             if (user) {
@@ -333,8 +334,8 @@
                 const userDoc = await db.collection('users').doc(user.uid).get();
                 if (userDoc.exists) {
                     currentUserData = userDoc.data();
-                    document.getElementById('userNameDisplay').innerText = currentUserData.name;
-                    if(user.photoURL) document.getElementById('userImg').src = user.photoURL;
+                    if(document.getElementById('userNameDisplay')) document.getElementById('userNameDisplay').innerText = currentUserData.name;
+                    if(user.photoURL && document.getElementById('userImg')) document.getElementById('userImg').src = user.photoURL;
                     loadUserGroups(); 
                 } else {
                     document.getElementById('view-setup').classList.add('hidden');
@@ -358,8 +359,8 @@
             });
 
             currentUserData = { name: enteredName, email: auth.currentUser.email.toLowerCase() };
-            document.getElementById('userNameDisplay').innerText = enteredName;
-            if(auth.currentUser.photoURL) document.getElementById('userImg').src = auth.currentUser.photoURL;
+            if(document.getElementById('userNameDisplay')) document.getElementById('userNameDisplay').innerText = enteredName;
+            if(auth.currentUser.photoURL && document.getElementById('userImg')) document.getElementById('userImg').src = auth.currentUser.photoURL;
             
             document.getElementById('view-name-setup').classList.add('hidden');
             loadUserGroups();
@@ -369,24 +370,31 @@
             const snapshot = await db.collection('members').where('uid', '==', auth.currentUser.uid).get();
             const groupList = document.getElementById('groupListContainer');
             const profileList = document.getElementById('profileGroupList');
-            groupList.innerHTML = ""; profileList.innerHTML = "";
+            if (groupList) groupList.innerHTML = ""; 
+            if (profileList) profileList.innerHTML = "";
 
-            if (snapshot.empty && !activeGroupID) { document.getElementById('view-setup').classList.remove('hidden'); return; }
+            if (snapshot.empty && !activeGroupID) { 
+                document.getElementById('view-setup').classList.remove('hidden'); 
+                return; 
+            }
 
             snapshot.forEach(async (memberDoc) => {
                 const groupDoc = await db.collection('groups').doc(memberDoc.data().groupId).get();
                 if (groupDoc.exists) {
                     const data = groupDoc.data();
-                    groupList.innerHTML += `<div class="group-card" onclick="enterGroup('${groupDoc.id}', '${data.name}')"><span>${data.name}</span><small style="color: var(--accent);">CODE: ${data.code}</small></div>`;
-                    
-                    profileList.innerHTML += `
-                        <div class="group-card" style="cursor: default;">
-                            <div onclick="enterGroup('${groupDoc.id}', '${data.name}')" style="flex:1; cursor:pointer;">
-                                <span>${data.name}</span>
-                                <small style="color: var(--accent); margin-left: 10px;">CODE: ${data.code}</small>
-                            </div>
-                            <button onclick="leaveGroup('${groupDoc.id}', '${memberDoc.id}', '${data.name}')" style="background:var(--red); color:white; padding:5px 10px; margin:0; font-size:12px;">Leave</button>
-                        </div>`;
+                    if (groupList) {
+                        groupList.innerHTML += `<div class="group-card" onclick="enterGroup('${groupDoc.id}', '${data.name}')"><span>${data.name}</span><small style="color: var(--accent);">CODE: ${data.code}</small></div>`;
+                    }
+                    if (profileList) {
+                        profileList.innerHTML += `
+                            <div class="group-card" style="cursor: default;">
+                                <div onclick="enterGroup('${groupDoc.id}', '${data.name}')" style="flex:1; cursor:pointer;">
+                                    <span>${data.name}</span>
+                                    <small style="color: var(--accent); margin-left: 10px;">CODE: ${data.code}</small>
+                                </div>
+                                <button onclick="leaveGroup('${groupDoc.id}', '${memberDoc.id}', '${data.name}')" style="background:var(--red); color:white; padding:5px 10px; margin:0; font-size:12px;">Leave</button>
+                            </div>`;
+                    }
                 }
             });
             if (!activeGroupID) document.getElementById('view-setup').classList.remove('hidden');
@@ -406,7 +414,6 @@
             const code = Math.random().toString(36).substring(2, 8).toUpperCase();
 
             try {
-                // 2. STAMPING THE CREATION DATE IN FIREBASE HERE
                 const groupRef = await db.collection('groups').add({ 
                     name, 
                     code, 
@@ -451,17 +458,18 @@
 
         async function enterGroup(id, name) {
             activeGroupID = id;
-            document.getElementById('activeGroupName').innerText = name;
+            if(document.getElementById('activeGroupName')) document.getElementById('activeGroupName').innerText = name;
             
+            // Immediately shift view panels before doing async loads to avoid frozen black views
+            if(document.getElementById('view-setup')) document.getElementById('view-setup').classList.add('hidden');
+            if(document.getElementById('main-ui')) document.getElementById('main-ui').classList.remove('hidden');
+
             const groupDoc = await db.collection('groups').doc(id).get();
             const groupData = groupDoc.data();
             
-            // 3. FETCHING THE CREATION DATE HERE
-            // If it's an old group without a timestamp, fallback to May 1st to protect the app.
             activeGroupCreatedAt = groupData.createdAt ? groupData.createdAt.toDate() : new Date('2026-05-01');
 
             const adminArray = groupData.admins || [];
-            
             const currentEmail = auth.currentUser.email.toLowerCase();
             isAdmin = adminArray.includes(currentEmail);
 
@@ -485,35 +493,38 @@
 
             const uniqueAdmins = Array.from(adminsMap.values());
             const badgePrefix = uniqueAdmins.length > 1 ? "Batch Admins" : "Batch Admin";
-            document.getElementById('adminBadge').innerText = `${badgePrefix}: ${uniqueAdmins.join(', ')}`;
-            document.getElementById('adminBadge').classList.remove('hidden');
-
-            if (isAdmin) {
-                document.getElementById('registerCard').classList.remove('hidden');
-                document.getElementById('submit-att-btn').classList.remove('hidden');
-                document.getElementById('removeStudentsCard').classList.remove('hidden');
-                document.getElementById('adminPromotionCard').classList.remove('hidden');
-                document.getElementById('adminDemotionCard').classList.remove('hidden'); 
-                document.getElementById('adminListCard').classList.remove('hidden'); 
-                document.getElementById('userRoleDisplay').innerText = "Role: Admin";
-
-                const adminListDisplay = document.getElementById('adminListDisplay');
-                adminListDisplay.innerHTML = "";
-                adminsMap.forEach((nameVal, emailKey) => {
-                    adminListDisplay.innerHTML += `<div style="padding:10px 0; border-bottom:1px solid #333;"><span style="font-size: 16px;">${nameVal}</span><br><span style="color: var(--accent); font-size: 12px;">${emailKey}</span></div>`;
-                });
-            } else {
-                document.getElementById('registerCard').classList.add('hidden');
-                document.getElementById('submit-att-btn').classList.add('hidden');
-                document.getElementById('removeStudentsCard').classList.add('hidden');
-                document.getElementById('adminPromotionCard').classList.add('hidden');
-                document.getElementById('adminDemotionCard').classList.add('hidden');
-                document.getElementById('adminListCard').classList.add('hidden'); 
-                document.getElementById('userRoleDisplay').innerText = "Role: Student / Member";
+            
+            const adminBadgeEl = document.getElementById('adminBadge');
+            if (adminBadgeEl) {
+                adminBadgeEl.innerText = `${badgePrefix}: ${uniqueAdmins.join(', ')}`;
+                adminBadgeEl.classList.remove('hidden');
             }
 
-            document.getElementById('view-setup').classList.add('hidden');
-            document.getElementById('main-ui').classList.remove('hidden');
+            if (isAdmin) {
+                if(document.getElementById('registerCard')) document.getElementById('registerCard').classList.remove('hidden');
+                if(document.getElementById('submit-att-btn')) document.getElementById('submit-att-btn').classList.remove('hidden');
+                if(document.getElementById('removeStudentsCard')) document.getElementById('removeStudentsCard').classList.remove('hidden');
+                if(document.getElementById('adminPromotionCard')) document.getElementById('adminPromotionCard').classList.remove('hidden');
+                if(document.getElementById('adminDemotionCard')) document.getElementById('adminDemotionCard').classList.remove('hidden'); 
+                if(document.getElementById('adminListCard')) document.getElementById('adminListCard').classList.remove('hidden'); 
+                if(document.getElementById('userRoleDisplay')) document.getElementById('userRoleDisplay').innerText = "Role: Admin";
+
+                const adminListDisplay = document.getElementById('adminListDisplay');
+                if (adminListDisplay) {
+                    adminListDisplay.innerHTML = "";
+                    adminsMap.forEach((nameVal, emailKey) => {
+                        adminListDisplay.innerHTML += `<div style="padding:10px 0; border-bottom:1px solid #333;"><span style="font-size: 16px;">${nameVal}</span><br><span style="color: var(--accent); font-size: 12px;">${emailKey}</span></div>`;
+                    });
+                }
+            } else {
+                if(document.getElementById('registerCard')) document.getElementById('registerCard').classList.add('hidden');
+                if(document.getElementById('submit-att-btn')) document.getElementById('submit-att-btn').classList.add('hidden');
+                if(document.getElementById('removeStudentsCard')) document.getElementById('removeStudentsCard').classList.add('hidden');
+                if(document.getElementById('adminPromotionCard')) document.getElementById('adminPromotionCard').classList.add('hidden');
+                if(document.getElementById('adminDemotionCard')) document.getElementById('adminDemotionCard').classList.add('hidden');
+                if(document.getElementById('adminListCard')) document.getElementById('adminListCard').classList.add('hidden'); 
+                if(document.getElementById('userRoleDisplay')) document.getElementById('userRoleDisplay').innerText = "Role: Student / Member";
+            }
             
             await checkTodayAttendance(); 
             loadData();
@@ -522,7 +533,7 @@
         function exitGroup() { 
             activeGroupID = null; 
             loadUserGroups(); 
-            document.getElementById('main-ui').classList.add('hidden'); 
+            if(document.getElementById('main-ui')) document.getElementById('main-ui').classList.add('hidden'); 
             switchView('home'); 
         }
 
@@ -536,15 +547,19 @@
             const snapshot = await db.collection('attendance').where('groupId', '==', activeGroupID).where('date', '==', today).get();
 
             if (!snapshot.empty && isAdmin) {
-                btn.innerText = "Submitted"; 
-                btn.style.background = "#333"; 
-                btn.disabled = true;
+                if(btn) {
+                    btn.innerText = "Submitted"; 
+                    btn.style.background = "#333"; 
+                    btn.disabled = true;
+                }
                 if (tuitionOffBtn) tuitionOffBtn.style.display = 'none';
                 if (tuitionOffContainer) tuitionOffContainer.style.display = 'none';
             } else if (isAdmin) {
-                btn.innerText = "Submit"; 
-                btn.style.background = "var(--green)"; 
-                btn.disabled = false;
+                if(btn) {
+                    btn.innerText = "Submit"; 
+                    btn.style.background = "var(--green)"; 
+                    btn.disabled = false;
+                }
                 if (tuitionOffBtn) tuitionOffBtn.style.display = 'block';
             }
         }
@@ -559,7 +574,9 @@
             const att = document.getElementById('attList');
             const rem = document.getElementById('removalList');
             
-            home.innerHTML = ""; att.innerHTML = ""; rem.innerHTML = "";
+            if(home) home.innerHTML = ""; 
+            if(att) att.innerHTML = ""; 
+            if(rem) rem.innerHTML = "";
             let studentsArray = []; 
 
             snapshot.forEach(doc => {
@@ -567,23 +584,25 @@
             });
 
             studentsArray.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
-            
             currentStudentsData = studentsArray;
 
             studentsArray.forEach((s, index) => {
                 const rollNo = index + 1; 
                 const displayDate = s.admissionDate ? s.admissionDate.split('-').reverse().join('-') : 'N/A';
-                
                 const clickableName = `<span style="color: var(--accent); cursor: pointer; font-weight: bold; text-decoration: underline;" onclick="viewStudentFees('${s.id}', '${s.name}')">${s.name}</span>`;
                 
-                home.innerHTML += `<tr><td>${rollNo}</td><td>${clickableName}</td><td>${s.class}</td><td>${displayDate}</td></tr>`;
+                if(home) {
+                    home.innerHTML += `<tr><td>${rollNo}</td><td>${clickableName}</td><td>${s.class}</td><td>${displayDate}</td></tr>`;
+                }
                 
                 const disabledAttr = (isAdmin && !isLockedForAdmin) ? "" : "disabled";
-                att.innerHTML += `<tr><td>${rollNo}</td><td>${s.name}</td>
-                    <td style="text-align:center;"><input type="radio" name="at-${s.id}" id="p-${s.id}" ${disabledAttr}></td>
-                    <td style="text-align:center;"><input type="radio" name="at-${s.id}" id="a-${s.id}" ${disabledAttr}></td></tr>`;
+                if(att) {
+                    att.innerHTML += `<tr><td>${rollNo}</td><td>${s.name}</td>
+                        <td style="text-align:center;"><input type="radio" name="at-${s.id}" id="p-${s.id}" ${disabledAttr}></td>
+                        <td style="text-align:center;"><input type="radio" name="at-${s.id}" id="a-${s.id}" ${disabledAttr}></td></tr>`;
+                }
                 
-                if (isAdmin) {
+                if (isAdmin && rem) {
                     rem.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #333;"><span><b>${rollNo}.</b> ${s.name}</span><button onclick="deleteStudent('${s.id}')" style="background:var(--red); color:white; padding:5px 12px; font-size:12px;">Remove</button></div>`;
                 }
             });
@@ -594,10 +613,10 @@
 
         async function viewStudentFees(studentId, studentName) {
             const modal = document.getElementById('studentFeeModal');
-            document.getElementById('modalStudentName').innerText = studentName;
+            if(document.getElementById('modalStudentName')) document.getElementById('modalStudentName').innerText = studentName;
             const content = document.getElementById('modalFeeContent');
-            content.innerHTML = "Fetching records...";
-            modal.classList.remove('hidden');
+            if(content) content.innerHTML = "Fetching records...";
+            if(modal) modal.classList.remove('hidden');
 
             try {
                 const feeSnap = await db.collection('fees')
@@ -621,21 +640,24 @@
                 });
                 
                 html += "</tbody></table>";
-                content.innerHTML = html;
+                if(content) content.innerHTML = html;
             } catch (err) {
-                content.innerHTML = "Error loading fee details.";
+                if(content) content.innerHTML = "Error loading fee details.";
                 console.error(err);
             }
         }
 
         function renderFeeNavigation() {
             const container = document.getElementById('feeMonthsContainer');
+            if(!container) return;
             container.innerHTML = "";
             monthNames.forEach((m, index) => {
                 const active = index === currentFeeMonth ? "active" : "";
                 container.innerHTML += `<div class="month-item ${active}" onclick="selectFeeMonth(${index})">${m}</div>`;
             });
-            document.getElementById('currentMonthHeader').innerText = `${monthNames[currentFeeMonth]} Fees Status`;
+            if(document.getElementById('currentMonthHeader')) {
+                document.getElementById('currentMonthHeader').innerText = `${monthNames[currentFeeMonth]} Fees Status`;
+            }
         }
 
         function selectFeeMonth(m) { 
@@ -646,6 +668,7 @@
 
         async function loadFeesForMonth() {
             const feesList = document.getElementById('feesList');
+            if(!feesList) return;
             feesList.innerHTML = `<tr><td colspan="3">Loading...</td></tr>`;
 
             const feeSnap = await db.collection('fees')
@@ -685,11 +708,14 @@
         }
 
         function showFeeInput(id) {
-            document.getElementById('f-cont-' + id).innerHTML = `
-                <input type="date" id="date-${id}" style="color-scheme:dark;">
-                <button class="btn-submit-date" onclick="submitFeeData('${id}')">Submit</button>
-                <button class="btn-cancel" onclick="cancelFeeInput('${id}')">Cancel</button>
-            `;
+            const container = document.getElementById('f-cont-' + id);
+            if(container) {
+                container.innerHTML = `
+                    <input type="date" id="date-${id}" style="color-scheme:dark;">
+                    <button class="btn-submit-date" onclick="submitFeeData('${id}', event)">Submit</button>
+                    <button class="btn-cancel" onclick="cancelFeeInput('${id}')">Cancel</button>
+                `;
+            }
         }
 
         let targetAttendanceDate = null; 
@@ -736,8 +762,8 @@
         function toggleTuitionOffUI() {
             const container = document.getElementById('tuition-off-container');
             const btn = document.getElementById('btn-tuition-off');
-            container.classList.toggle('hidden');
-            if(!container.classList.contains('hidden')) {
+            if(container) container.classList.toggle('hidden');
+            if(container && !container.classList.contains('hidden') && btn) {
                 btn.style.display = 'none'; 
             }
         }
@@ -754,9 +780,9 @@
             const detailsDiv = headerElement.nextElementSibling;
             const arrowSpan = headerElement.querySelector('.arrow');
             
-            detailsDiv.classList.toggle('hidden');
+            if(detailsDiv) detailsDiv.classList.toggle('hidden');
             
-            if (detailsDiv.classList.contains('hidden')) {
+            if (detailsDiv && detailsDiv.classList.contains('hidden')) {
                 if (arrowSpan) arrowSpan.innerText = "▼";
             } else {
                 if (arrowSpan) arrowSpan.innerText = "▲";
@@ -803,21 +829,26 @@
         }
 
         function cancelFeeInput(id) {
-            document.getElementById('f-cont-' + id).innerHTML = `
-                <input type="radio" name="p-${id}" id="pd-${id}" onclick="showFeeInput('${id}')">
-                <label for="pd-${id}">Paid</label> 
-                <input type="radio" name="p-${id}" id="pn-${id}" checked>
-                <label for="pn-${id}">Pending</label>
-            `;
+            const container = document.getElementById('f-cont-' + id);
+            if(container) {
+                container.innerHTML = `
+                    <input type="radio" name="p-${id}" id="pd-${id}" onclick="showFeeInput('${id}')">
+                    <label for="pd-${id}">Paid</label> 
+                    <input type="radio" name="p-${id}" id="pn-${id}" checked>
+                    <label for="pn-${id}">Pending</label>
+                `;
+            }
         }
 
-        async function submitFeeData(id) {
+        async function submitFeeData(id, event) {
             const dateVal = document.getElementById('date-' + id).value;
             if (!dateVal) return alert("Pick a date first!");
             
             const btn = event.target;
-            btn.disabled = true;
-            btn.innerText = "Saving...";
+            if(btn) {
+                btn.disabled = true;
+                btn.innerText = "Saving...";
+            }
 
             const uniqueFeeId = `${activeGroupID}_${id}_${currentFeeYear}_${currentFeeMonth}`;
 
@@ -833,8 +864,10 @@
                 loadFeesForMonth(); 
             } catch (error) {
                 alert("Failed to save fee data.");
-                btn.disabled = false;
-                btn.innerText = "Submit";
+                if(btn) {
+                    btn.disabled = false;
+                    btn.innerText = "Submit";
+                }
             }
         }
 
@@ -853,7 +886,7 @@
             await db.collection('groups').doc(activeGroupID).update({ admins: firebase.firestore.FieldValue.arrayUnion(email) });
             alert(email + " has been successfully promoted to Admin!");
             emailInput.value = "";
-            enterGroup(activeGroupID, document.getElementById('activeGroupName').innerText);
+            enterGroup(activeGroupID, document.getElementById('activeGroupName') ? document.getElementById('activeGroupName').innerText : "");
         }
 
         async function demoteAdmin() {
@@ -871,7 +904,7 @@
             await db.collection('groups').doc(activeGroupID).update({ admins: firebase.firestore.FieldValue.arrayRemove(email) });
             alert(email + " has been removed from Admins.");
             emailInput.value = "";
-            enterGroup(activeGroupID, document.getElementById('activeGroupName').innerText);
+            enterGroup(activeGroupID, document.getElementById('activeGroupName') ? document.getElementById('activeGroupName').innerText : "");
         }
 
         async function deleteStudent(id) {
@@ -931,19 +964,17 @@
             location.reload(); 
         }
 
-        // ==========================================
-        // 4. SMART DRILL-DOWN HISTORY SYSTEM (REPLACES OLD HISTORY LOGIC)
-        // ==========================================
         let currentHistoryLevel = 'years'; 
         let selectedHistYear = null;
         let selectedHistMonth = null;
 
         function loadAttendanceHistory() {
             currentHistoryLevel = 'years';
-            document.getElementById('history-nav').style.display = 'none';
+            if(document.getElementById('history-nav')) document.getElementById('history-nav').style.display = 'none';
             const contentDiv = document.getElementById('history-content');
+            if(!contentDiv) return;
             
-            const startYear = activeGroupCreatedAt.getFullYear();
+            const startYear = activeGroupCreatedAt ? activeGroupCreatedAt.getFullYear() : new Date().getFullYear();
             const currentYear = new Date().getFullYear();
             
             let html = `<h4 style="color: var(--accent); margin-top: 0; margin-bottom: 15px;">📁 Select a Year</h4><div style="display: flex; flex-direction: column; gap: 10px;">`;
@@ -959,12 +990,14 @@
             currentHistoryLevel = 'months';
             selectedHistYear = year;
             
-            document.getElementById('history-nav').style.display = 'flex';
-            document.getElementById('history-breadcrumb').innerText = `${year}`;
+            if(document.getElementById('history-nav')) document.getElementById('history-nav').style.display = 'flex';
+            if(document.getElementById('history-breadcrumb')) document.getElementById('history-breadcrumb').innerText = `${year}`;
             
             const contentDiv = document.getElementById('history-content');
-            const startYear = activeGroupCreatedAt.getFullYear();
-            const startMonth = activeGroupCreatedAt.getMonth();
+            if(!contentDiv) return;
+
+            const startYear = activeGroupCreatedAt ? activeGroupCreatedAt.getFullYear() : new Date().getFullYear();
+            const startMonth = activeGroupCreatedAt ? activeGroupCreatedAt.getMonth() : 0;
             const currentYear = new Date().getFullYear();
             const currentMonth = new Date().getMonth();
             
@@ -984,10 +1017,11 @@
             currentHistoryLevel = 'dates';
             selectedHistMonth = month;
             
-            document.getElementById('history-nav').style.display = 'flex';
-            document.getElementById('history-breadcrumb').innerText = `${monthNames[month]} ${year}`;
+            if(document.getElementById('history-nav')) document.getElementById('history-nav').style.display = 'flex';
+            if(document.getElementById('history-breadcrumb')) document.getElementById('history-breadcrumb').innerText = `${monthNames[month]} ${year}`;
             
             const contentDiv = document.getElementById('history-content');
+            if(!contentDiv) return;
             contentDiv.innerHTML = "<p style='text-align:center; color: var(--accent);'>Fetching records...</p>";
             
             try {
@@ -995,9 +1029,9 @@
                 let historyData = [];
                 snapshot.forEach(doc => historyData.push(doc.data()));
 
-                let startYear = activeGroupCreatedAt.getFullYear();
-                let startMonth = activeGroupCreatedAt.getMonth();
-                let startDate = activeGroupCreatedAt.getDate();
+                let startYear = activeGroupCreatedAt ? activeGroupCreatedAt.getFullYear() : new Date().getFullYear();
+                let startMonth = activeGroupCreatedAt ? activeGroupCreatedAt.getMonth() : 0;
+                let startDate = activeGroupCreatedAt ? activeGroupCreatedAt.getDate() : 1;
                 let today = new Date();
                 
                 let loopStartDay = (year === startYear && month === startMonth) ? startDate : 1;
@@ -1064,16 +1098,15 @@
                 renderHistoryMonths(selectedHistYear); 
             }
         }
-        // ==========================================
 
         function switchAttBranch(b) {
-            document.getElementById('branch-today').classList.toggle('hidden', b !== 'today');
-            document.getElementById('branch-history').classList.toggle('hidden', b !== 'history');
-            document.getElementById('branch-summary').classList.toggle('hidden', b !== 'summary');
+            if(document.getElementById('branch-today')) document.getElementById('branch-today').classList.toggle('hidden', b !== 'today');
+            if(document.getElementById('branch-history')) document.getElementById('branch-history').classList.toggle('hidden', b !== 'history');
+            if(document.getElementById('branch-summary')) document.getElementById('branch-summary').classList.toggle('hidden', b !== 'summary');
             
-            document.getElementById('sub-today').classList.toggle('active', b === 'today');
-            document.getElementById('sub-history').classList.toggle('active', b === 'history');
-            document.getElementById('sub-summary').classList.toggle('active', b === 'summary');
+            if(document.getElementById('sub-today')) document.getElementById('sub-today').classList.toggle('active', b === 'today');
+            if(document.getElementById('sub-history')) document.getElementById('sub-history').classList.toggle('active', b === 'history');
+            if(document.getElementById('sub-summary')) document.getElementById('sub-summary').classList.toggle('active', b === 'summary');
 
             if (b === 'history') loadAttendanceHistory();
         }
@@ -1090,8 +1123,10 @@
 
             if (!name || !cls || !date) return alert("Fill all details!");
 
-            regBtn.disabled = true;
-            regBtn.innerText = "Registering...";
+            if(regBtn) {
+                regBtn.disabled = true;
+                regBtn.innerText = "Registering...";
+            }
 
             try {
                 await db.collection('students').add({ name, class: cls, admissionDate: date, groupId: activeGroupID });
@@ -1100,24 +1135,29 @@
             } catch (e) {
                 alert("Failed to register.");
             } finally {
-                regBtn.disabled = false;
-                regBtn.innerText = "Register";
+                if(regBtn) {
+                    regBtn.disabled = false;
+                    regBtn.innerText = "Register";
+                }
             }
         }
 
         function handleLogin() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
         function handleLogout() { auth.signOut().then(() => window.location.href = "index.html"); }
+        
         function showSection(id) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            document.getElementById('section-' + id).classList.add('active');
+            if(document.getElementById('section-' + id)) document.getElementById('section-' + id).classList.add('active');
+            
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById('tab-' + id).classList.add('active');
+            if(document.getElementById('tab-' + id)) document.getElementById('tab-' + id).classList.add('active');
         }
+        
         function switchView(v) {
-            document.getElementById('view-home').classList.toggle('hidden', v !== 'home');
-            document.getElementById('view-profile').classList.toggle('hidden', v !== 'profile');
-            document.getElementById('bot-home').classList.toggle('active', v === 'home');
-            document.getElementById('bot-profile').classList.toggle('active', v === 'profile');
+            if(document.getElementById('view-home')) document.getElementById('view-home').classList.toggle('hidden', v !== 'home');
+            if(document.getElementById('view-profile')) document.getElementById('view-profile').classList.toggle('hidden', v !== 'profile');
+            if(document.getElementById('bot-home')) document.getElementById('bot-home').classList.toggle('active', v === 'home');
+            if(document.getElementById('bot-profile')) document.getElementById('bot-profile').classList.toggle('active', v === 'profile');
             if(v === 'profile') loadData(); 
         }
 
@@ -1139,7 +1179,7 @@
             const endDate = new Date(endVal);
             endDate.setHours(23,59,59,999);
 
-            summaryList.innerHTML = "<tr><td colspan='4' style='text-align:center;'>Counting...</td></tr>";
+            if(summaryList) summaryList.innerHTML = "<tr><td colspan='4' style='text-align:center;'>Counting...</td></tr>";
 
             try {
                 const snapshot = await db.collection('attendance').where('groupId', '==', activeGroupID).get();
@@ -1174,11 +1214,13 @@
                     `;
                 }
 
-                summaryList.innerHTML = html || "<tr><td colspan='4' style='text-align:center; padding: 15px; color:#888;'>No attendance recorded between these dates.</td></tr>";
+                if(summaryList) {
+                    summaryList.innerHTML = html || "<tr><td colspan='4' style='text-align:center; padding: 15px; color:#888;'>No attendance recorded between these dates.</td></tr>";
+                }
 
             } catch (e) {
                 console.error(e);
-                summaryList.innerHTML = "<tr><td colspan='4' style='color:var(--red); padding: 15px;'>Failed to calculate range.</td></tr>";
+                if(summaryList) summaryList.innerHTML = "<tr><td colspan='4' style='color:var(--red); padding: 15px;'>Failed to calculate range.</td></tr>";
             }
         }
 
