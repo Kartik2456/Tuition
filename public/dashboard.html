@@ -11,10 +11,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
 
-    <!-- Updated Firebase SDKs to matching 10.12.2 versions -->
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <!-- Automated Firebase Script Loader Reference -->
+    <script src="load-firebase.js"></script>
     <style>
         :root { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --accent: #bb86fc; --green: #03dac6; --red: #cf6679; }
         body { background-color: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 80px; overflow-x: hidden; }
@@ -297,7 +295,6 @@
     </div>
 
     <script>
-        // Restored complete firebaseConfig mapping the required client appId matching index.html
         const firebaseConfig = {
             apiKey: "AIzaSyDH9vfqKh16tka_14deuwWzYDQR-2TvR_U",
             authDomain: "tuituionhub.firebaseapp.com",
