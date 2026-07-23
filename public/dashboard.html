@@ -11,8 +11,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
 
-    <!-- Automated Firebase Script Loader Reference -->
-    <script src="load-firebase.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
     <style>
         :root { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --accent: #bb86fc; --green: #03dac6; --red: #cf6679; }
         body { background-color: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 80px; overflow-x: hidden; }
@@ -459,6 +460,7 @@
             activeGroupID = id;
             if(document.getElementById('activeGroupName')) document.getElementById('activeGroupName').innerText = name;
             
+            // Immediately shift view panels before doing async loads to avoid frozen black views
             if(document.getElementById('view-setup')) document.getElementById('view-setup').classList.add('hidden');
             if(document.getElementById('main-ui')) document.getElementById('main-ui').classList.remove('hidden');
 
